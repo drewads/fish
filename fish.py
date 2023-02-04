@@ -61,7 +61,18 @@ class Fish:
     self.known_cards[player].add(card)
 
     if card not in self.known_half_suits[ask_player]['independent_of']:
-      self.known_half_suits[ask_player]['half_suits'].remove(hs_of(card))
+      new_dependent = None
+      for ind_card in self.known_half_suits[ask_player]['independent_of']:
+        if hs_of(card) == hs_of(ind_card):
+          new_dependent = ind_card
+          break
+      if new_dependent is not None:
+        # if we lose a card that is not in independent_of but we still have this
+        # halfsuit represented in independent_of, remove one card from halfsuit
+        # in independent_of and keep the halfsuit in known_halfsuits
+        self.known_half_suits[ask_player]['independent_of'].remove(new_dependent)
+      else:
+        self.known_half_suits[ask_player]['half_suits'].remove(hs_of(card))
 
     self.known_half_suits[player]['independent_of'].add(card)
     return True
