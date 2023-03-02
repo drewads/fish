@@ -22,7 +22,7 @@ def hs_of(card):
 class Fish:
   def __init__(self, seed=None):
     self.known_cards = dict(zip(range(PLAYERS), [set() for _ in range(PLAYERS)])) # maps player to known cards for that player. starts: {player : set()}
-    starting_deck = range(DECK_LEN)
+    starting_deck = [card for card in range(DECK_LEN)]
     if seed:
       random.seed(seed)
     random.shuffle(starting_deck)
@@ -72,7 +72,7 @@ class Fish:
         # halfsuit represented in independent_of, remove one card from halfsuit
         # in independent_of and keep the halfsuit in known_halfsuits
         self.known_half_suits[ask_player]['independent_of'].remove(new_dependent)
-      else:
+      elif hs_of(card) in self.known_half_suits[ask_player]['half_suits']:
         self.known_half_suits[ask_player]['half_suits'].remove(hs_of(card))
 
     self.known_half_suits[player]['independent_of'].add(card)
@@ -113,6 +113,8 @@ class Fish:
       for card in cards:
         if card not in self.cards[p]:
           correct = False
+
+    # TODO: if incorrect, find all cards, remove cards from hands, and update halfsuits per team
 
     # remove halfsuit from players' hands and update other state
     for p, cards in evidence.items():
