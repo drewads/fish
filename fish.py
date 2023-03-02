@@ -59,6 +59,7 @@ class Fish:
     self.cards[ask_player].remove(card)
     self.cards[player].add(card)
     self.known_cards[player].add(card)
+    self.known_not_cards[ask_player].add(card)
 
     if card not in self.known_half_suits[ask_player]['independent_of']:
       new_dependent = None
