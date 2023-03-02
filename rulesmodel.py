@@ -60,12 +60,21 @@ class RulesModel:
         transfer : bool
             Whether the card was given
         """
+        if transfer:
+            if asker == self.player_number:
+                self.cards.append(card)
+            if askee == self.player_number:
+                self.cards.remove(card)
+
         if self.known_minimum_in_half_suit[asker][hs_of(card)] == 0:
             self.known_minimum_in_half_suit[asker][hs_of(card)] = 1
 
-        self.known_not_cards[askee].add(card)
         if transfer:
             self.known_cards[asker].add(card)
+            for player in self.team + self.other_team:
+                if player != asker:
+                    self.known_not_cards[player].add(card)
+
             if card in self.known_not_cards[asker]:
                 self.known_not_cards[asker].remove(card)
             if card in self.known_cards[askee]:
@@ -74,6 +83,7 @@ class RulesModel:
             self.known_minimum_in_half_suit[askee][hs_of(card)] -= 1
         else:
             self.known_not_cards[asker].add(card)
+            self.known_not_cards[askee].add(card)
 
     def claim_halfsuit(self, team, halfsuit, successful):
         """
@@ -89,4 +99,41 @@ class RulesModel:
         self.half_suits_in_play.remove(halfsuit)
 
     def take_action(self):
-        pass
+        for half_suit_to_find in self.half_suits_in_play:
+            cards_in_hs = [card for card in range(54) if hs_of(card) == half_suit_to_find]
+            valid_halfsuit = False
+            for card in cards_in_hs:
+                if card in self.cards:
+                    valid_halfsuit = True
+                    break
+            if valid_halfsuit:
+                break
+
+        # If we know of a card in an opponents hand, ask for it
+        for card in cards_in_hs:
+            for player in self.other_team:
+                if card in self.known_cards[player]:
+                    return (-1, (player, card))
+
+        # ask for lowest numerical card to lowest opposing player
+        # you don't ask for a card you know they don't have
+        for card in cards_in_hs:
+            for player in self.other_team:
+                if card not in self.known_not_cards[player]:
+                    return (-1, (player, card))
+        
+        # declare halfsuit when we know exactly where all cards are and they are in our team's hands
+        declare_dict = {k: set() for k in self.team}
+        cards_with_unknown_location = cards_in_hs
+        for card in cards_in_hs:
+            for player in self.team:
+                if card in self.known_cards[player]:
+                    declare_dict[player].add(card)
+                    cards_with_unknown_location.remove(card)
+
+        if len(cards_with_unknown_location) == 0:
+            return (1, declare_dict)
+
+        for card in cards_in_hs:  # Basically just a base case in case the player's team has all the cards in the half-suit, but they don't know where they are
+            if card not in self.known_cards[self.player_number]:
+                return (-1, (random.choice(self.other_team), card))
