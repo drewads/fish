@@ -13,6 +13,7 @@
 
 from fish import HS_LEN, hs_of
 import random
+from pprint import pprint
 
 
 class RulesModel:
@@ -45,6 +46,8 @@ class RulesModel:
                 if player == player_number:
                     continue
                 self.known_not_cards[player].add(card)
+
+        self.known_not_cards[self.player_number] = set(range(54)) - self.known_cards[self.player_number]
 
         self.known_minimum_in_half_suit = {k: [0 for _ in range(HS_LEN)] for k in team + other_team}
 
@@ -86,6 +89,11 @@ class RulesModel:
             self.known_not_cards[asker].add(card)
             self.known_not_cards[askee].add(card)
 
+        # print(f'asker: {asker}, askee: {askee}, card: {card}, transfer: {transfer}, self.player_number: {self.player_number}')
+        # pprint(self.known_cards)
+        # pprint(self.known_not_cards)
+        # breakpoint()
+
     def claim_halfsuit(self, team, halfsuit, successful):
         """
         Parameters
@@ -110,6 +118,11 @@ class RulesModel:
             where evidence is a dictionary of evidence. See fish.py for more information
 
         """
+        print("\n\n")
+        print("Cards: ", self.cards)
+        print("Known cards: ", self.known_cards)
+        print("Known not cards: ", self.known_not_cards)
+        print("Player: ", self.player_number)
         for half_suit_to_find in self.half_suits_in_play:
             cards_in_hs = [card for card in range(54) if hs_of(card) == half_suit_to_find]
             valid_halfsuit = False
@@ -118,7 +131,10 @@ class RulesModel:
                     valid_halfsuit = True
                     break
             if valid_halfsuit:
+                print(f"Searching for halfsuit {half_suit_to_find}")
                 break
+
+        input("")
 
         # If we know of a card in an opponents hand, ask for it
         for card in cards_in_hs:
@@ -135,7 +151,7 @@ class RulesModel:
         
         # declare halfsuit when we know exactly where all cards are and they are in our team's hands
         declare_dict = {k: set() for k in self.team}
-        cards_with_unknown_location = cards_in_hs
+        cards_with_unknown_location = list(cards_in_hs)
         for card in cards_in_hs:
             for player in self.team:
                 if card in self.known_cards[player]:
@@ -148,3 +164,9 @@ class RulesModel:
         for card in cards_in_hs:  # Basically just a base case in case the player's team has all the cards in the half-suit, but they don't know where they are
             if card not in self.known_cards[self.player_number]:
                 return (-1, (random.choice(self.other_team), card))
+
+        print("Cannot declare halfsuit ", half_suit_to_find, "containing cards", cards_in_hs, "with cards in unknown location", cards_with_unknown_location)
+        # raise(Exception("Oops"))
+
+        breakpoint()
+
