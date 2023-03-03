@@ -37,7 +37,7 @@ class RulesModel:
         self.half_suits_in_play = list(range(HS_LEN))
         self.known_cards = {k: set() for k in team + other_team}
         for card in starting_cards:
-            self.known_cards[player_number].add(starting_cards)
+            self.known_cards[player_number].add(card)
 
         self.known_not_cards = {k: set() for k in team + other_team}
         for card in starting_cards:
