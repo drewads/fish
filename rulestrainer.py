@@ -11,19 +11,6 @@ from fish import PLAYERS, TEAM_LEN, HS_LEN, DECK_LEN
 
 """
 This class initializes a model and a game of fish.
-
-class Trainer:
-    def __init__(self, tmodel, tseed):
-        self.players = [tmodel() for _ in PLAYERS]
-        self.playersindex = [i for i in range(PLAYERS)] # 0-2 are a team, 3-5 are a team
-        self.current_game = fish(seed = tseed)
-
-    def action(self, player, ask_player, cardOrEvidence):
-        if type(cardOrEvidence) != dict:
-            self.current_game.perform_action(player, ask_player, cardOrEvidence)
-        else:
-            self.current_game.declare_halfsuit(player, cardOrEvidence)
-
 """
 def get_otherteam(player):
     if player <= 2:
@@ -55,12 +42,20 @@ def play_game():
     models = [rulesmodel.RulesModel(i, get_team(i), get_otherteam(i), start_cards[i]) for i in players]
     current_player = 0
     while (sets_left > 0):
-
         # have the model(player) decide what card to ask for
         (action, action_support) = models[current_player].take_action()
 
-        if action == -1: # declared a halfsuit
-            pass
+        if action == 1: # declared a halfsuit
+            evidence = action_support[0]
+            was_valid = current_game.declare_halfsuit(current_player, evidence)
+            if not was_valid:
+                raise Exception(" They declared a halfsuit that was invalid! Oh no!")
+            
+
+            halfsuit = action_support[1]
+            for player in players: # each player records the action
+                models[player].claim_halfsuit(current_player, get_team(current_player), halfsuit, was_valid)
+            
         else:
             askee = action_support[0]
             card = action_support[1]
