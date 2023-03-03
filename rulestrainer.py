@@ -14,20 +14,19 @@ This class initializes a model and a game of fish.
 """
 def get_otherteam(player):
     if player <= 2:
-        otherteam = [i for i in range(3,6) if i != player]
+        otherteam = [i for i in range(3,6)]
         return otherteam
     
-    otherteam = [i for i in range(3) if i != player]
+    otherteam = [i for i in range(3)]
     return otherteam
 
 def get_team(player):
     if player <= 2: # numplayers/2
-        team = [i for i in range(3) if i != player]
+        team = [i for i in range(3)]
         return team
     
-    team = [i for i in range(3,6) if i != player]
+    team = [i for i in range(3,6)]
     return team
-
 
 def play_game():
     turns = 0
