@@ -12,6 +12,7 @@
 # declare halfsuit when we know exactly where all cards are and they are in our team's hands
 
 from fish import HS_LEN, hs_of
+import random
 
 
 class RulesModel:
@@ -99,6 +100,16 @@ class RulesModel:
         self.half_suits_in_play.remove(halfsuit)
 
     def take_action(self):
+        """
+        Returns:
+        if action is to ask for a card:
+            (-1, (askee, card))
+
+        if action is to declare a halfsuit:
+            (1, (evidence, halfsuit index))
+            where evidence is a dictionary of evidence. See fish.py for more information
+
+        """
         for half_suit_to_find in self.half_suits_in_play:
             cards_in_hs = [card for card in range(54) if hs_of(card) == half_suit_to_find]
             valid_halfsuit = False
@@ -132,7 +143,7 @@ class RulesModel:
                     cards_with_unknown_location.remove(card)
 
         if len(cards_with_unknown_location) == 0:
-            return (1, declare_dict)
+            return (1, (declare_dict, half_suit_to_find))
 
         for card in cards_in_hs:  # Basically just a base case in case the player's team has all the cards in the half-suit, but they don't know where they are
             if card not in self.known_cards[self.player_number]:
