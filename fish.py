@@ -92,6 +92,7 @@ class Fish:
     # }
 
     halfsuit = None
+    num_cards = 0
 
     # check evidence is valid
     num_cards = 0
@@ -117,14 +118,13 @@ class Fish:
     # TODO: if incorrect, find all cards, remove cards from hands, and update halfsuits per team
 
     # remove halfsuit from players' hands and update other state
-    # breakpoint()
-    # for p, cards in evidence.items():
-    #   for card in cards:
-    #     self.cards[p].remove(card)
-    #     self.known_cards[p].discard(card)
-    #     for player_p in range(PLAYERS):
-    #       self.known_not_cards[player_p].discard(card)
-      # self.known_halfsuits[p].discard(halfsuit)
+    for p, cards in evidence.items():
+      for card in cards:
+        self.cards[p].remove(card)
+        self.known_cards[p].discard(card)
+        for kn_p in range(PLAYERS):
+          self.known_not_cards[kn_p].discard(card)
+      self.known_half_suits[p]['half_suits'].discard(halfsuit)
 
     # give halfsuit to correct team
     self.half_suits_per_team[player // TEAM_LEN] += 1
