@@ -47,15 +47,15 @@ def play_game():
 
         if action == 1: # declared a halfsuit
             evidence = action_support[0]
+            print("The set ", evidence, " was declared. ")
             was_valid = current_game.declare_halfsuit(current_player, evidence)
             if not was_valid:
                 raise Exception(" They declared a halfsuit that was invalid! Oh no!")
             
-            print("The set ", evidence, " was declared. ")
             sets_left -= 1
             halfsuit = action_support[1]
             for player in players: # each player records the action
-                models[player].claim_halfsuit(current_player, get_team(current_player), halfsuit, was_valid)
+                models[player].claim_halfsuit(get_team(current_player), halfsuit, was_valid)
             
         else:
             askee = action_support[0]
