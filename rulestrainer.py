@@ -73,6 +73,7 @@ def play_game():
         turns += 1
         turns_per_player[current_player] += 1
 
+    print(current_game.half_suits_per_team)
     return
 
 
