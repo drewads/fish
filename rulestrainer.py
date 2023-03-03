@@ -61,7 +61,15 @@ def play_game():
             askee = action_support[0]
             card = action_support[1]
             transfer = current_game.perform_action(current_player, askee, card)
-            print("Player ", current_player, " asks ", askee, " for card ", card)
+            #print("Player ", current_player, " asks ", askee, " for card ", card)
+            if transfer: 
+                print(askee, "had card ", card)
+                start_cards = [list(current_game.cards[i]) for i in players]
+    
+                print(start_cards)
+                input("")
+            #else :
+                #print(askee, "did not have card ", card)
             # update who has what card in the fish game
             for player in players: # each player records the action
                 models[player].record_action(current_player, askee, card, transfer)
@@ -72,6 +80,7 @@ def play_game():
         # check if a player declared a halfsuit, and then decriment it
         turns += 1
         turns_per_player[current_player] += 1
+
 
     print(current_game.half_suits_per_team)
     return
