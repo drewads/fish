@@ -12,5 +12,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.model == 'simple_rules':
-        from rulestrainer import main
-        main()
+        from rulestrainer import play_game
+        play_game()
