@@ -28,6 +28,7 @@ def get_team(player):
     team = [i for i in range(3,6)]
     return team
 
+
 def play_game():
     turns = 0
     turns_per_player = [0 for i in range(PLAYERS)]
@@ -50,7 +51,8 @@ def play_game():
             if not was_valid:
                 raise Exception(" They declared a halfsuit that was invalid! Oh no!")
             
-
+            print("The set ", evidence, " was declared. ")
+            sets_left -= 1
             halfsuit = action_support[1]
             for player in players: # each player records the action
                 models[player].claim_halfsuit(current_player, get_team(current_player), halfsuit, was_valid)
@@ -59,12 +61,12 @@ def play_game():
             askee = action_support[0]
             card = action_support[1]
             transfer = current_game.perform_action(current_player, askee, card)
-            
+            print("Player ", current_player, " asks ", askee, " for card ", card)
             # update who has what card in the fish game
             for player in players: # each player records the action
                 models[player].record_action(current_player, askee, card, transfer)
             
-            if transfer:
+            if not transfer:
                 current_player = askee
         
         # check if a player declared a halfsuit, and then decriment it
