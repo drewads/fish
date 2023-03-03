@@ -32,7 +32,7 @@ def get_team(player):
 def play_game():
     turns = 0
     turns_per_player = [0 for i in range(PLAYERS)]
-    sets_left = HS_LEN/DECK_LEN
+    sets_left = DECK_LEN/HS_LEN 
     players = [i for i in range(PLAYERS)]
 
     current_game = fish.Fish()
