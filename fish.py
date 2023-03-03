@@ -92,20 +92,20 @@ class Fish:
     # }
 
     halfsuit = None
+    num_cards = 0
 
     # check evidence is valid
     for p, cards in evidence.items():
       if p // TEAM_LEN != player // TEAM_LEN:
         return None
-      num_cards = 0
       for card in cards:
         num_cards += 1
         if halfsuit == None:
           halfsuit = hs_of(card)
         if hs_of(card) != halfsuit:
           return None
-      if num_cards != HS_LEN:
-        return None
+    if num_cards != HS_LEN:
+      return None
 
     correct = True
     # check evidence is correct
@@ -121,9 +121,9 @@ class Fish:
       for card in cards:
         self.cards[p].remove(card)
         self.known_cards[p].discard(card)
-        for p in range(PLAYERS):
-          self.known_not_cards[p].discard(card)
-      self.known_halfsuits[p].discard(halfsuit)
+        for kn_p in range(PLAYERS):
+          self.known_not_cards[kn_p].discard(card)
+      self.known_half_suits[p]['half_suits'].discard(halfsuit)
 
     # give halfsuit to correct team
     self.half_suits_per_team[player // TEAM_LEN] += 1
