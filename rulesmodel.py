@@ -35,7 +35,7 @@ class RulesModel:
         self.other_team = other_team
         self.cards = starting_cards
 
-        self.half_suits_in_play = list(range(HS_LEN))
+        self.half_suits_in_play = list(range(int(54 / HS_LEN)))
         self.known_cards = {k: set() for k in team + other_team}
         for card in starting_cards:
             self.known_cards[player_number].add(card)
@@ -47,9 +47,11 @@ class RulesModel:
                     continue
                 self.known_not_cards[player].add(card)
 
+        self.num_cards = {k: len(starting_cards) for k in self.team + self.other_team}
+
         self.known_not_cards[self.player_number] = set(range(54)) - self.known_cards[self.player_number]
 
-        self.known_minimum_in_half_suit = {k: [0 for _ in range(HS_LEN)] for k in team + other_team}
+        self.known_minimum_in_half_suit = {k: [0 for _ in range(int(54 / HS_LEN))] for k in team + other_team}
 
     def record_action(self, asker, askee, card, transfer):
         """
@@ -70,10 +72,12 @@ class RulesModel:
             if askee == self.player_number:
                 self.cards.remove(card)
 
-        if self.known_minimum_in_half_suit[asker][hs_of(card)] == 0:
+        if self.known_minimum_in_half_suit[asker][hs_of(card)] <= 0:
             self.known_minimum_in_half_suit[asker][hs_of(card)] = 1
 
         if transfer:
+            self.num_cards[asker] += 1
+            self.num_cards[askee] -= 1
             self.known_cards[asker].add(card)
             for player in self.team + self.other_team:
                 if player != asker:
@@ -97,7 +101,7 @@ class RulesModel:
         # pprint(self.known_not_cards)
         # breakpoint()
 
-    def claim_halfsuit(self, team, halfsuit, successful):
+    def claim_halfsuit(self, team, halfsuit, successful, evidence):
         """
         Parameters
         ----------
@@ -109,6 +113,22 @@ class RulesModel:
             Whether the claim is successful
         """
         self.half_suits_in_play.remove(halfsuit)
+        cards_in_hs = [card for card in range(54) if hs_of(card) == halfsuit]
+        for card in cards_in_hs:
+            if card in self.cards:
+                self.cards.remove(card)
+            for player in self.team + self.other_team:
+                if card in self.known_not_cards[player]:
+                    self.known_not_cards[player].remove(card)
+                if card in self.known_cards[player]:
+                    self.known_cards[player].remove(card)
+
+        if successful:
+            for player in evidence:
+                for card in evidence[player]:
+                    self.num_cards[player] -= 1
+        else:
+            breakpoint()
 
     def take_action(self):
         """
@@ -126,6 +146,9 @@ class RulesModel:
         print("Known cards: ", self.known_cards)
         print("Known not cards: ", self.known_not_cards)
         print("Player: ", self.player_number)
+        print("Half suits in play: ", self.half_suits_in_play)
+        print("Num cards: ", self.num_cards)
+        foundAHalfSuit = False
         for half_suit_to_find in self.half_suits_in_play:
             cards_in_hs = [card for card in range(54) if hs_of(card) == half_suit_to_find]
             valid_halfsuit = False
@@ -135,9 +158,14 @@ class RulesModel:
                     break
             if valid_halfsuit:
                 print(f"Searching for halfsuit {half_suit_to_find}")
+                foundAHalfSuit = True
                 break
 
-        input("")
+        print("Known mins in halfsuit", [self.known_minimum_in_half_suit[player][half_suit_to_find] for player in range(6)])
+
+        # if not foundAHalfSuit:
+        #     breakpoint()
+        # input("")
 
         # If we know of a card in an opponents hand, ask for it
         for card in cards_in_hs:
@@ -149,6 +177,8 @@ class RulesModel:
         # you don't ask for a card you know they don't have
         for card in cards_in_hs:
             for player in self.other_team:
+                if self.num_cards[player] <= 0:
+                    continue
                 if card not in self.known_not_cards[player]:
                     return (-1, (player, card))
         
@@ -161,8 +191,29 @@ class RulesModel:
                     declare_dict[player].add(card)
                     cards_with_unknown_location.remove(card)
 
+        if len(cards_with_unknown_location) != 0:
+            other_team_members = set(self.team) - {self.player_number}
+            for o_team_member in other_team_members:
+                if self.known_minimum_in_half_suit[o_team_member][half_suit_to_find] <= 0:
+                    team_member_with_cards = list(other_team_members - {o_team_member})[0]
+                    for card in cards_with_unknown_location:
+                        declare_dict[team_member_with_cards].add(card)
+                    cards_with_unknown_location = []
+
+        if len(cards_with_unknown_location) != 0:
+            cwul_copy = list(cards_with_unknown_location)
+            for card in cards_with_unknown_location:
+                for player in declare_dict:
+                    if self.known_minimum_in_half_suit[player][hs_of(card)] < len(declare_dict[player]):
+                        declare_dict[player].add(card)
+                        cwul_copy.remove(card)
+                        break
+            cards_with_unknown_location = cwul_copy
+
         if len(cards_with_unknown_location) == 0:
             return (1, (declare_dict, half_suit_to_find))
+        else:
+            breakpoint()
 
         for card in cards_in_hs:  # Basically just a base case in case the player's team has all the cards in the half-suit, but they don't know where they are
             if card not in self.known_cards[self.player_number]:
