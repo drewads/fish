@@ -41,7 +41,7 @@ def play_game():
     print(start_cards)
     models = [rulesmodel.RulesModel(i, get_team(i), get_otherteam(i), start_cards[i]) for i in players]
     current_player = 0
-    while (sets_left > 0):
+    while (current_game.team_won() is None):
         # have the model(player) decide what card to ask for
         (action, action_support) = models[current_player].take_action()
 
@@ -49,7 +49,7 @@ def play_game():
             evidence = action_support[0]
             print("The set ", evidence, " was declared. ")
             was_valid = current_game.declare_halfsuit(current_player, evidence)
-            if not was_valid:
+            if was_valid is None:
                 raise Exception(" They declared a halfsuit that was invalid! Oh no!")
             
             sets_left -= 1
