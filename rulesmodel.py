@@ -85,6 +85,9 @@ class RulesModel:
                 self.known_cards[askee].remove(card)
             self.known_minimum_in_half_suit[asker][hs_of(card)] += 1
             self.known_minimum_in_half_suit[askee][hs_of(card)] -= 1
+            self.known_minimum_in_half_suit[askee][hs_of(card)] = max(
+                (self.known_minimum_in_half_suit[askee][hs_of(card)], 0)
+              )
         else:
             self.known_not_cards[asker].add(card)
             self.known_not_cards[askee].add(card)
