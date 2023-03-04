@@ -27,7 +27,7 @@ class Fish:
     if randomize:
       random.shuffle(starting_deck)
     self.cards = dict(zip(range(PLAYERS), [set(starting_deck[i:i+PLAYER_NUM_CARDS_BEGIN]) for i in range(0, DECK_LEN, PLAYER_NUM_CARDS_BEGIN)])) # maps player to cards (each field is only viewable by that player, but num cards viewable by all). starts: {player : 9 random cards}
-    self.half_suits_per_team = {0 : 0, 1 : 0} # maps team to num half suits taken. starts: {team : 0}
+    self.half_suits_per_team = {0 : 0, 1 : 0} # maps team to num half suits taken. starts: {team : 0}. Game ends when one of the teams reaches 5
     self.taken_half_suits = set() # which half suits have been taken. start: set()
 
   def perform_action(self, player, ask_player, card):
@@ -46,6 +46,13 @@ class Fish:
     self.cards[player].add(card)
 
     return True
+  
+  ## This function should be considered private
+  def find_card(self, card):
+      for p, cards in self.cards.items():
+        if card in cards:
+          return p
+      raise "Card not found in cards"
 
   def declare_halfsuit(self, player, evidence):
     ### Returns True if action was valid and successful, False if action was valid and unsuccessful, and None if action was invalid
@@ -60,7 +67,8 @@ class Fish:
     #   ...
     # }
 
-    halfsuit = None
+    halfsuit = None # halfsuit being declared
+
     # check evidence is valid
     seen_cards = set()
     for p, cards in evidence.items():
@@ -78,30 +86,27 @@ class Fish:
       return None
     if halfsuit in self.taken_half_suits:
       return None
+    # end check evidence is valid
     
-    def find_card(card):
-      for p, cards in self.cards.items():
-        if card in cards:
-          return p
-      raise "Card not found in cards"
-
+    # check evidence is correct and find all cards
     correct = True
     card_locations = {}
-    # check evidence is correct
     for p, cards in evidence.items():
       for card in cards:
         if card not in self.cards[p]:
           correct = False
-          card_locations[card] = find_card(card)
+          card_locations[card] = self.find_card(card)
         else:
           card_locations[card] = p
+    # end check evidence is correct and find all cards
 
-    # remove halfsuit from players' hands and update other state
+    # remove halfsuit from players' hands
     for card, p in card_locations.items():
       self.cards[p].remove(card)
 
     # give halfsuit to correct team
-    self.half_suits_per_team[(player // TEAM_LEN + (not correct)) % 2] += 1
+    team_getting_halfsuit = (player // TEAM_LEN + (not correct)) % 2
+    self.half_suits_per_team[team_getting_halfsuit] += 1
     self.taken_half_suits.add(halfsuit)
 
     return correct
