@@ -49,10 +49,18 @@ class Fish:
   
   ## This function should be considered private
   def find_card(self, card):
-      for p, cards in self.cards.items():
-        if card in cards:
-          return p
-      raise "Card not found in cards"
+    for p, cards in self.cards.items():
+      if card in cards:
+        return p
+    raise "Card not found in cards"
+  
+  def team_won(self):
+    threshold = (DECK_LEN // HS_LEN) / 2
+    if self.half_suits_per_team[0] > threshold:
+      return 0
+    if self.half_suits_per_team[1] > threshold:
+      return 1
+    return None
 
   def declare_halfsuit(self, player, evidence):
     ### Returns True if action was valid and successful, False if action was valid and unsuccessful, and None if action was invalid

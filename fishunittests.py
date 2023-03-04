@@ -161,7 +161,7 @@ def incorrectly_declare_to_end():
   if game.declare_halfsuit(5, evidence) is not False:
     return "Declare halfsuit check incorrect 7"
   if game.half_suits_per_team[0] == 5 and game.half_suits_per_team[1] == 2 and \
-     len(game.taken_half_suits) == 7:
+     len(game.taken_half_suits) == 7 and game.team_won() == 0:
     return "Passed"
   return "State incorrect"
 
