@@ -25,7 +25,7 @@ class Fish:
     starting_deck = [card for card in range(DECK_LEN)]
     if seed:
       random.seed(seed)
-    # random.shuffle(starting_deck)
+    random.shuffle(starting_deck)
     self.cards = dict(zip(range(PLAYERS), [set(starting_deck[i:i+PLAYER_NUM_CARDS_BEGIN]) for i in range(0, DECK_LEN, PLAYER_NUM_CARDS_BEGIN)])) # maps player to cards (each field is only viewable by that player, but num cards viewable by all). starts: {player : 9 random cards}
     self.half_suits_per_team = {0 : 0, 1 : 0} # maps team to num half suits taken. starts: {team : 0}
     self.taken_half_suits = set() # which half suits have been taken. start: set()

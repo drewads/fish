@@ -55,7 +55,7 @@ def play_game():
             sets_left -= 1
             halfsuit = action_support[1]
             for player in players: # each player records the action
-                models[player].claim_halfsuit(get_team(current_player), halfsuit, was_valid)
+                models[player].claim_halfsuit(get_team(current_player), halfsuit, was_valid, evidence)
             
         else:
             askee = action_support[0]
@@ -67,7 +67,7 @@ def play_game():
                 start_cards = [list(current_game.cards[i]) for i in players]
     
                 print(start_cards)
-                input("")
+                # input("")
             #else :
                 #print(askee, "did not have card ", card)
             # update who has what card in the fish game
