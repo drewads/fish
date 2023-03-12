@@ -43,6 +43,7 @@ def play_game():
     current_player = 0
     while (current_game.team_won() is None):
         # have the model(player) decide what card to ask for
+        
         (action, action_support) = models[current_player].take_action()
 
         if action == 1: # declared a halfsuit
@@ -54,7 +55,7 @@ def play_game():
             sets_left -= 1
             halfsuit = action_support[1]
             was_successful = result[0]
-            print("The set ", evidence, " was declared " + "successfully." if was_successful else "unsuccessfully.")
+            # print("The set ", evidence, " was declared " + "successfully." if was_successful else "unsuccessfully.")
             card_locations = result[1]
             for player in players: # each player records the action
                 models[player].claim_halfsuit(get_team(current_player), halfsuit, was_successful, card_locations)
@@ -67,10 +68,10 @@ def play_game():
                 raise Exception("Invalid ask for card!")
             #print("Player ", current_player, " asks ", askee, " for card ", card)
             if transfer: 
-                print(askee, "had card ", card)
+                # print(askee, "had card ", card)
                 start_cards = [list(current_game.cards[i]) for i in players]
     
-                print(start_cards)
+                # print(start_cards)
                 # input("")
             #else :
                 #print(askee, "did not have card ", card)
@@ -79,14 +80,38 @@ def play_game():
                 models[player].record_action(current_player, askee, card, transfer)
             
             if not transfer:
+                # if current_player
                 current_player = askee
-        
+
+
+        #print(current_game.cards_left(current_player))
+        if current_game.cards_left(current_player) == 0:
+            #print("prev current player = ", current_player)
+            team = get_team(current_player)
+            swap = False
+            for player in team:
+                if current_game.cards_left(player):
+                    current_player = player
+                    swap = True
+                
+            if not swap:
+                for player in get_otherteam(current_player):
+                    if current_game.cards_left(player):
+                        current_player = player
+            #print("new current player = ", current_player)
+               
         # check if a player declared a halfsuit, and then decriment it
         turns += 1
         turns_per_player[current_player] += 1
 
+        # print("Current player = ", current_player)
+        current_game.print_curr_state()
 
-    print(current_game.half_suits_per_team)
+
+
+
+    print("halfsuits per team ", current_game.half_suits_per_team)
+    print("Team that won ", current_game.team_won)
     return
 
 

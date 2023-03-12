@@ -29,6 +29,14 @@ class Fish:
     self.cards = dict(zip(range(PLAYERS), [set(starting_deck[i:i+PLAYER_NUM_CARDS_BEGIN]) for i in range(0, DECK_LEN, PLAYER_NUM_CARDS_BEGIN)])) # maps player to cards (each field is only viewable by that player, but num cards viewable by all). starts: {player : 9 random cards}
     self.half_suits_per_team = {0 : 0, 1 : 0} # maps team to num half suits taken. starts: {team : 0}. Game ends when one of the teams reaches 5
     self.taken_half_suits = set() # which half suits have been taken. start: set()
+  
+  def cards_left(self, player):
+    return len(self.cards[player])
+  
+  def print_curr_state(self):
+    print("Cards dict by player", self.cards)
+    print("Halfsuits per team = ", self.half_suits_per_team)
+    print("Taken half suits = ", self.taken_half_suits)
 
   def perform_action(self, player, ask_player, card):
     ### returns True if action was valid and successful, False if action was valid and unsuccessful, and None if action was invalid
@@ -118,3 +126,5 @@ class Fish:
     self.taken_half_suits.add(halfsuit)
 
     return (correct, card_locations)
+
+

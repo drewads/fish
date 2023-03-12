@@ -137,6 +137,8 @@ class RulesModel(BaseModel):
             where evidence is a dictionary of evidence. See fish.py for more information
 
         """
+
+        """
         print("\n\n")
         print("Cards: ", self.cards)
         print("Known cards: ", self.known_cards)
@@ -144,6 +146,7 @@ class RulesModel(BaseModel):
         print("Player: ", self.player_number)
         print("Half suits in play: ", self.half_suits_in_play)
         print("Num cards: ", self.num_cards)
+        """
         foundAHalfSuit = False
         for half_suit_to_find in self.half_suits_in_play:
             cards_in_hs = [card for card in range(54) if hs_of(card) == half_suit_to_find]
@@ -209,7 +212,8 @@ class RulesModel(BaseModel):
         if len(cards_with_unknown_location) == 0:
             return (1, (declare_dict, half_suit_to_find))
         else:
-            breakpoint()
+            pass
+            # breakpoint()
 
         for card in cards_in_hs:  # Basically just a base case in case the player's team has all the cards in the half-suit, but they don't know where they are
             if card not in self.known_cards[self.player_number]:
