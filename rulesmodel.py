@@ -101,7 +101,7 @@ class RulesModel(BaseModel):
         # pprint(self.known_not_cards)
         # breakpoint()
 
-    def claim_halfsuit(self, team, halfsuit, successful, evidence):
+    def claim_halfsuit(self, team, halfsuit, successful, card_locations):
         """
         Parameters
         ----------
@@ -123,12 +123,8 @@ class RulesModel(BaseModel):
                 if card in self.known_cards[player]:
                     self.known_cards[player].remove(card)
 
-        if successful:
-            for player in evidence:
-                for card in evidence[player]:
-                    self.num_cards[player] -= 1
-        else:
-            breakpoint()
+        for card in card_locations:
+            self.num_cards[card_locations[card]] -= 1
 
     def take_action(self):
         """

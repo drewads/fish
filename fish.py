@@ -117,4 +117,4 @@ class Fish:
     self.half_suits_per_team[team_getting_halfsuit] += 1
     self.taken_half_suits.add(halfsuit)
 
-    return correct
+    return (correct, card_locations)

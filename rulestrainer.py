@@ -47,20 +47,24 @@ def play_game():
 
         if action == 1: # declared a halfsuit
             evidence = action_support[0]
-            print("The set ", evidence, " was declared. ")
-            was_valid = current_game.declare_halfsuit(current_player, evidence)
-            if was_valid is None:
+            result = current_game.declare_halfsuit(current_player, evidence)
+            if result is None:
                 raise Exception(" They declared a halfsuit that was invalid! Oh no!")
             
             sets_left -= 1
             halfsuit = action_support[1]
+            was_successful = result[0]
+            print("The set ", evidence, " was declared " + "successfully." if was_successful else "unsuccessfully.")
+            card_locations = result[1]
             for player in players: # each player records the action
-                models[player].claim_halfsuit(get_team(current_player), halfsuit, was_valid, evidence)
+                models[player].claim_halfsuit(get_team(current_player), halfsuit, was_successful, card_locations)
             
         else:
             askee = action_support[0]
             card = action_support[1]
             transfer = current_game.perform_action(current_player, askee, card)
+            if transfer is None:
+                raise Exception("Invalid ask for card!")
             #print("Player ", current_player, " asks ", askee, " for card ", card)
             if transfer: 
                 print(askee, "had card ", card)

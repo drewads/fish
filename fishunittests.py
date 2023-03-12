@@ -65,7 +65,7 @@ def correctly_declare_halfsuit():
     0 : set([48, 51, 52, 53, 49]),
     1 : set([50])
   }
-  if game.declare_halfsuit(0, evidence) is not True:
+  if game.declare_halfsuit(0, evidence)[0] is not True:
     return "Declare halfsuit did not go through"
   if len(game.cards[0]) == 6 and len(game.cards[1]) == 8 \
      and game.half_suits_per_team[0] == 1 and 8 in game.taken_half_suits:
@@ -116,7 +116,7 @@ def incorrectly_declare_to_end():
     0 : set([48, 51, 52, 53, 49]),
     1 : set([50])
   }
-  if game.declare_halfsuit(0, evidence) is not False:
+  if game.declare_halfsuit(0, evidence)[0] is not False:
     return "Declare halfsuit check incorrect 1"
   # halfsuit 1
   evidence = {
@@ -124,7 +124,7 @@ def incorrectly_declare_to_end():
     1 : set([6, 8]),
     2 : set([7, 10])
   }
-  if game.declare_halfsuit(0, evidence) is not False:
+  if game.declare_halfsuit(0, evidence)[0] is not False:
     return "Declare halfsuit check incorrect 2"
   # halfsuit 6
   evidence = {
@@ -132,33 +132,33 @@ def incorrectly_declare_to_end():
     4 : set([37, 40]),
     5 : set([39, 41])
   }
-  if game.declare_halfsuit(3, evidence) is not False:
+  if game.declare_halfsuit(3, evidence)[0] is not False:
     return "Declare halfsuit check incorrect 3"
   # halfsuit 7
   evidence = {
     4 : set([43]),
     3 : set([42, 44, 45, 46, 47])
   }
-  if game.declare_halfsuit(4, evidence) is not False:
+  if game.declare_halfsuit(4, evidence)[0] is not False:
     return "Declare halfsuit check incorrect 4"
   # halfsuit 0
   evidence = {
     5 : set([1]),
     3 : set([0, 5, 2, 3, 4])
   }
-  if game.declare_halfsuit(5, evidence) is not False:
+  if game.declare_halfsuit(5, evidence)[0] is not False:
     return "Declare halfsuit check incorrect 5"
   # halfsuit 2
   evidence = {
     5 : set([12, 13, 14, 15, 16, 17])
   }
-  if game.declare_halfsuit(5, evidence) is not False:
+  if game.declare_halfsuit(5, evidence)[0] is not False:
     return "Declare halfsuit check incorrect 6"
   # halfsuit 5
   evidence = {
     5 : set([30, 31, 32, 33, 34, 35])
   }
-  if game.declare_halfsuit(5, evidence) is not False:
+  if game.declare_halfsuit(5, evidence)[0] is not False:
     return "Declare halfsuit check incorrect 7"
   if game.half_suits_per_team[0] == 5 and game.half_suits_per_team[1] == 2 and \
      len(game.taken_half_suits) == 7 and game.team_won() == 0:
