@@ -14,9 +14,9 @@
 from fish import HS_LEN, hs_of
 import random
 from pprint import pprint
+from base_model import BaseModel
 
-
-class RulesModel:
+class RulesModel(BaseModel):
     def __init__(self, player_number, team, other_team, starting_cards):
         """
         Parameters
@@ -30,11 +30,11 @@ class RulesModel:
         starting_cards : list(int)
             A list of the cards the player starts with
         """
-        self.player_number = player_number
-        self.team = team
-        self.other_team = other_team
-        self.cards = starting_cards
+        super(RulesModel, self).__init__(player_number, team, other_team, starting_cards)
 
+        self.startNewGame(player_number, team, other_team, starting_cards)
+        
+    def startNewGame(self, player_number, team, other_team, starting_cards):
         self.half_suits_in_play = list(range(int(54 / HS_LEN)))
         self.known_cards = {k: set() for k in team + other_team}
         for card in starting_cards:
