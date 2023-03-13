@@ -254,7 +254,7 @@ class DeepQModel(BaseModel):
 
         train_declare_dataset = CustomDataset(declare_inputs, declare_targets)
         train_declare_dataloader = DataLoader(train_declare_dataset, batch_size=32, shuffle=True)
-        declare_loss_fn = torch.nn.MSELoss()
+        declare_loss_fn = torch.nn.CrossEntropyLoss()
         declare_optimizer = torch.optim.Adam(self.declaration_model.parameters(), lr=1e-3)
         self.declaration_model.train()
 
@@ -288,35 +288,6 @@ class DeepQModel(BaseModel):
 
         self.model.train()
         pbar = tqdm(train_dataloader, desc="Training action network", leave=False, position=1)
-        running_average = 0
-        seen_so_far = 0
-        loss_average = 0
-        for index, (inp, target) in enumerate(pbar):
-            prediction = torch.squeeze(self.model(inp))
-
-            loss = loss_fn(prediction, target)
-
-            optimizer.zero_grad()
-            loss.backward()
-
-            optimizer.step()
-
-            seen_so_far += 1
-            running_average *= (seen_so_far - 1) / seen_so_far
-            running_average += loss.item() / seen_so_far
-
-            loss_average += loss.item() / len(train_dataloader)
-
-            pbar.set_postfix({'loss': running_average})
-
-        train_dataset = CustomDataset(declare_inputs, declare_targets)
-        train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-
-        loss_fn = torch.nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
-
-        self.model.train()
-        pbar = tqdm(train_dataloader, desc="Training declare network", leave=False, position=1)
         running_average = 0
         seen_so_far = 0
         loss_average = 0
