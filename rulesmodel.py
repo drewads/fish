@@ -126,7 +126,7 @@ class RulesModel(BaseModel):
         for card in card_locations:
             self.num_cards[card_locations[card]] -= 1
 
-    def take_action(self):
+    def take_action(self, turns):
         """
         Returns:
         if action is to ask for a card:
@@ -156,11 +156,11 @@ class RulesModel(BaseModel):
                     valid_halfsuit = True
                     break
             if valid_halfsuit:
-                print(f"Searching for halfsuit {half_suit_to_find}")
+                #print(f"Searching for halfsuit {half_suit_to_find}")
                 foundAHalfSuit = True
                 break
 
-        print("Known mins in halfsuit", [self.known_minimum_in_half_suit[player][half_suit_to_find] for player in range(6)])
+        #print("Known mins in halfsuit", [self.known_minimum_in_half_suit[player][half_suit_to_find] for player in range(6)])
 
         # if not foundAHalfSuit:
         #     breakpoint()
@@ -214,6 +214,14 @@ class RulesModel(BaseModel):
         else:
             pass
             # breakpoint()
+
+
+        if turns > 250:
+            for card in cards_with_unknown_location:
+                player = random.choice(self.team)
+                declare_dict[player].add(card)
+            return (1, (declare_dict, half_suit_to_find))
+
 
         for card in cards_in_hs:  # Basically just a base case in case the player's team has all the cards in the half-suit, but they don't know where they are
             if card not in self.known_cards[self.player_number]:

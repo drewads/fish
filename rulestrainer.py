@@ -29,13 +29,15 @@ def get_team(player):
     return team
 
 
-def play_game():
+def play_game(s = None):
     turns = 0
     turns_per_player = [0 for i in range(PLAYERS)]
     sets_left = DECK_LEN/HS_LEN 
     players = [i for i in range(PLAYERS)]
 
-    current_game = fish.Fish()
+    time_since_transfer = 0
+
+    current_game = fish.Fish(seed=s)
     start_cards = [list(current_game.cards[i]) for i in players]
     
     print(start_cards)
@@ -44,7 +46,7 @@ def play_game():
     while (current_game.team_won() is None):
         # have the model(player) decide what card to ask for
         
-        (action, action_support) = models[current_player].take_action()
+        (action, action_support) = models[current_player].take_action(time_since_transfer)
 
         if action == 1: # declared a halfsuit
             evidence = action_support[0]
@@ -68,10 +70,11 @@ def play_game():
                 raise Exception("Invalid ask for card!")
             #print("Player ", current_player, " asks ", askee, " for card ", card)
             if transfer: 
-                # print(askee, "had card ", card)
+                time_since_transfer = 0
+                #print(askee, "had card ", card)
                 start_cards = [list(current_game.cards[i]) for i in players]
     
-                # print(start_cards)
+                #print(start_cards)
                 # input("")
             #else :
                 #print(askee, "did not have card ", card)
@@ -81,37 +84,46 @@ def play_game():
             
             if not transfer:
                 # if current_player
+                time_since_transfer += 1
                 current_player = askee
 
+        if current_game.team_won() is not None:
+            break
 
         #print(current_game.cards_left(current_player))
         if current_game.cards_left(current_player) == 0:
             #print("prev current player = ", current_player)
             team = get_team(current_player)
             swap = False
+            valid_players = []
             for player in team:
                 if current_game.cards_left(player):
-                    current_player = player
+                    valid_players.append(player)
                     swap = True
                 
             if not swap:
+                
                 for player in get_otherteam(current_player):
                     if current_game.cards_left(player):
-                        current_player = player
+                        valid_players.append(player)
+            
+            current_player = random.choice(valid_players)
             #print("new current player = ", current_player)
                
         # check if a player declared a halfsuit, and then decriment it
         turns += 1
         turns_per_player[current_player] += 1
 
-        # print("Current player = ", current_player)
-        current_game.print_curr_state()
+        #print("Current player = ", current_player)
+        #print("turns since transfer = ", time_since_transfer)
+        #current_game.print_curr_state()
+        #print("\n")
 
 
-
-
+    print("Game ended!")
     print("halfsuits per team ", current_game.half_suits_per_team)
     print("Team that won ", current_game.team_won)
+    print("\n")
     return
 
 
@@ -122,7 +134,11 @@ def main():
     inputfilename = sys.argv[1]
     outputfilename = sys.argv[2]
     policy = compute(inputfilename, outputfilename)"""
-    play_game()
+    #play_game(s = 19)
+
+    for i in range(250, 1500):
+        print("Game seed is = ", i)
+        play_game(s = i)
 
 
 
