@@ -36,8 +36,10 @@ def play_game(models, s = None):
     turns_per_player = [0 for i in range(PLAYERS)]
     sets_left = DECK_LEN/HS_LEN 
     players = [i for i in range(PLAYERS)]
+    who_declares = []
     
     time_since_transfer = 0
+    num_actions_player = dict(zip([i for i in range(PLAYERS)], [0 for _ in range(PLAYERS)]))
 
     current_game = fish.Fish(seed=s)
     start_cards = [list(current_game.cards[i]) for i in players]
@@ -52,6 +54,7 @@ def play_game(models, s = None):
         (action, action_support) = models[current_player].take_action(time_since_transfer)
 
         if action == 1: # declared a halfsuit
+            who_declares.append(current_player)
             evidence = action_support[0]
             result = current_game.declare_halfsuit(current_player, evidence)
             if result is None:
@@ -78,6 +81,7 @@ def play_game(models, s = None):
                 models[player].claim_halfsuit(get_team(current_player), halfsuit, was_successful, card_locations)
             
         else:
+            num_actions_player[current_player] += 1
             askee = action_support[0]
             card = action_support[1]
             transfer = current_game.perform_action(current_player, askee, card)
@@ -140,7 +144,7 @@ def play_game(models, s = None):
     #print("Team that won ", current_game.team_won())
     #print("Halfsuit declarations = ", halfsuit_declarations)
     #print("\n")
-    return halfsuit_declarations, current_game.team_won()
+    return halfsuit_declarations, current_game.team_won(), who_declares, num_actions_player
 
 
 def main():
@@ -162,8 +166,10 @@ def main():
     for batch_number in range(num_batches):
         print("Playing batch", batch_number)
         for i in range(10):
-            hd, winner = play_game(models, s = i)
+            hd, winner, who_declares, num_actions_player = play_game(models)
             print("Winner is", winner)
+            print("QModel declares", who_declares.count(0), "times. Team 1 declares", who_declares.count(0) + who_declares.count(1) + who_declares.count(2), "times. Team 2 declares", who_declares.count(3) + who_declares.count(4) + who_declares.count(5), "times.")
+            print("Actions per player: 0:", num_actions_player[0], "1:", num_actions_player[1], "2:", num_actions_player[2], "3:", num_actions_player[3], "4:",num_actions_player[4], "5:", num_actions_player[5])
             winners.append(winner)
 
             if sum(hd[0]) != 0:
