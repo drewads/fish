@@ -52,6 +52,11 @@ def play_game(s = None):
         (action, action_support) = models[current_player].take_action(time_since_transfer)
 
         if action == 1: # declared a halfsuit
+            print("Current player is, ", current_player)
+            print(" declaring halfsuit : ")
+            print(" action_support[0] = ", action_support[0])
+            print(" action_support[1] = ", action_support[1])
+            input("")
             evidence = action_support[0]
             result = current_game.declare_halfsuit(current_player, evidence)
             if result is None:
@@ -159,7 +164,7 @@ def main():
     for i in range(1, 1500):
         if i % 100:
             print("Game seed is = ", i)
-            
+
         hd, winner = play_game(s = i)
 
         loser = 0
