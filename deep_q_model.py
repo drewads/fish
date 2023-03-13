@@ -9,15 +9,35 @@ class QNetwork(torch.nn.Module):
     def __init__(self, inputSize):
         super(QNetwork, self).__init__()
         self.network = torch.nn.Sequential(
-            torch.nn.Linear(inputSize, 300),
+            torch.nn.Linear(inputSize, 1024),
             torch.nn.PReLU(),
-            torch.nn.Linear(300, 300),
+            torch.nn.Linear(1024, 1024),
             torch.nn.PReLU(),
-            torch.nn.Linear(300, 300),
+            torch.nn.Linear(1024, 512),
             torch.nn.PReLU(),
-            torch.nn.Linear(300, 300),
+            torch.nn.Linear(512, 512),
             torch.nn.PReLU(),
-            torch.nn.Linear(300, 1)
+            torch.nn.Linear(512, 1)
+            )
+
+    def forward(self, x):
+        out = self.network(x.float())
+        return out
+
+
+class DeclarationNetwork(torch.nn.Module):
+    def __init__(self, inputSize):
+        super(QNetwork, self).__init__()
+        self.network = torch.nn.Sequential(
+            torch.nn.Linear(inputSize, 1024),
+            torch.nn.PReLU(),
+            torch.nn.Linear(1024, 1024),
+            torch.nn.PReLU(),
+            torch.nn.Linear(1024, 1024),
+            torch.nn.PReLU(),
+            torch.nn.Linear(1024, 1024),
+            torch.nn.PReLU(),
+            torch.nn.Linear(1024, 9 + (9 * 6))
             )
 
     def forward(self, x):
@@ -84,13 +104,13 @@ class DeepQModel(BaseModel):
         self.action_replay.append(('sog'))
 
     def _generate_state(self, proposed_action, declare):
-        proposed_card, proposed_askee = proposed_action
+        proposed_askee, proposed_card = proposed_action
         proposed_card_tensor = torch.nn.functional.one_hot(torch.tensor(proposed_card), num_classes=54)
-        proposed_action_tensor = torch.nn.functional.one_hot(torch.tensor(proposed_action), num_classes=54)
+        proposed_askee_tensor = torch.nn.functional.one_hot(torch.tensor(proposed_askee), num_classes=6)
 
         if declare:
             proposed_card_tensor = torch.zeros(len(proposed_card_tensor))
-            proposed_action_tensor = torch.zeros(len(proposed_action_tensor))
+            proposed_askee_tensor = torch.zeros(len(proposed_askee_tensor))
 
         known_cards_tensor = torch.zeros(54 * 6)
         for player, cards in sorted(self.known_cards.items()):
@@ -106,7 +126,7 @@ class DeepQModel(BaseModel):
             for index, count in enumerate(counts):
                 known_minimum_in_half_suit_tensor[(player * 9) + index] = count
         declare_indicator = torch.tensor(1 if declare else 0)
-        return torch.cat([declare_indicator, proposed_card_tensor, proposed_action_tensor, known_cards_tensor, known_not_cards_tensor, num_cards_tensor, known_minimum_in_half_suit_tensor])
+        return torch.cat([declare_indicator, proposed_card_tensor, proposed_askee_tensor, known_cards_tensor, known_not_cards_tensor, num_cards_tensor, known_minimum_in_half_suit_tensor])
 
     def record_action(self, asker, askee, card, transfer):
         """
@@ -151,7 +171,7 @@ class DeepQModel(BaseModel):
             self.known_not_cards[asker].add(card)
             self.known_not_cards[askee].add(card)
 
-    def claim_halfsuit(self, team, halfsuit, successful, evidence):
+    def claim_halfsuit(self, team, halfsuit, successful, card_locations):
         """
         Parameters
         ----------
@@ -162,7 +182,7 @@ class DeepQModel(BaseModel):
         successful : bool
             Whether the claim is successful
         """
-        self.action_replay.append(('halfsuit_claim', team, halfsuit, successful, evidence))
+        self.action_replay.append(('halfsuit_claim', team, halfsuit, successful, card_locations, self._generate_state((0, 0), True)))
 
         self.half_suits_in_play.remove(halfsuit)
         cards_in_hs = [card for card in range(54) if hs_of(card) == halfsuit]
@@ -175,24 +195,33 @@ class DeepQModel(BaseModel):
                 if card in self.known_cards[player]:
                     self.known_cards[player].remove(card)
 
-        if successful:
-            for player in evidence:
-                for card in evidence[player]:
-                    self.num_cards[player] -= 1
-        else:
-            breakpoint()
+        for card in card_locations:
+            self.num_cards[card_locations[card]] -= 1
+
+    def _generate_declare_target(self, halfsuit, card_locations):
+        halfsuit_tensor = torch.nn.functional.one_hot(torch.tensor(halfsuit), num_classes=9)
+        location_tensors = []
+        for card, location in sorted(card_locations.items()):
+            location_tensors.append(torch.nn.functional.one_hot(torch.tensor(location), num_classes=6))
+        location_stacked_tensor = torch.cat(location_tensors)
+        return torch.cat([halfsuit_tensor, location_stacked_tensor])
 
     def train_for_iteration(self):
         inputs = []
         targets = []
+
+        declare_inputs = []
+        declare_targets = []
+
         current_score = 0
         for action in reversed(self.action_replay):
             if action[0] == 'halfsuit_claim':
-                _, team, halfsuit, successful, evidence = action
-                player_on_claiming_team = next(iter(evidence.keys()))
+                _, team, halfsuit, successful, card_locations, state = action
                 multiplier = 1
-                if player_on_claiming_team not in self.team:
+                if self.player_number in team:
                     multiplier = -1
+                    declare_inputs.append(state)
+                    declare_targets.append(self._generate_declare_target(halfsuit, card_locations))
                 if successful:
                     current_score += multiplier
                 else:
@@ -200,7 +229,7 @@ class DeepQModel(BaseModel):
             elif action[0] == 'sog':
                 current_score = 0
             else:
-                _, state = action
+                _, action_type, state = action
                 inputs.append(state)
                 targets.append(current_score)
                 current_score *= self.discount_factor
@@ -254,6 +283,9 @@ class DeepQModel(BaseModel):
         return actions
         #raise(NotImplementedError("TODO"))
 
+    def _generate_declaration(self):
+        pass
+
     def take_action(self):
         """
         Returns:
@@ -268,8 +300,7 @@ class DeepQModel(BaseModel):
         valid_actions = self._generate_valid_actions()
         actions = [self._generate_state(action, False) for action in valid_actions]
 
-        declare_action = torch.zeros(len(self._generate_state((0, 0), True)))
-        declare_action[0] = 1
+        declare_action = self._generate_state((0, 0), True)
         actions.append(declare_action)
 
         action_tensors = torch.stack(actions)
@@ -278,6 +309,11 @@ class DeepQModel(BaseModel):
         predicted_value = self.model(action_tensors)
         best_predicted_action = torch.argmax(predicted_value)
 
-        self.action_replay.append(('action', valid_actions[best_predicted_action]))
+        if best_predicted_action == len(actions) - 1:
+            self.action_replay.append(('action', 'declare', declare_action))
 
-        return valid_actions[best_predicted_action]
+            return (1, self._generate_declaration())
+        else:
+            self.action_replay.append(('action', 'ask', valid_actions[best_predicted_action]))
+
+            return (-1, valid_actions[best_predicted_action])
