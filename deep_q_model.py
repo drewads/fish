@@ -75,8 +75,8 @@ class DeepQModel(BaseModel):
 
         super(DeepQModel, self).__init__(None, None, None, None)
 
-        self.model = QNetwork(len(self._generate_state((0, 0), False)))
-        self.declaration_model = DeclarationNetwork(len(self._generate_state((0, 0), False)))
+        self.model = QNetwork(769)
+        self.declaration_model = DeclarationNetwork(769)
         self.discount_factor = .96  # I just randomly chose this lol
 
     def startNewGame(self, player_number, team, other_team, starting_cards):
@@ -207,10 +207,10 @@ class DeepQModel(BaseModel):
         return torch.cat([halfsuit_tensor, location_stacked_tensor])
 
     def _generate_declaration(self):
-        breakpoint()
         state = self._generate_state((0, 0), True)
         declaration_prediction = self.declaration_model(state)
-        halfsuit_prediction = torch.argmax(declaration_prediction[:9])
+        halfsuit_probabilities = declaration_prediction[:9][self.half_suits_in_play]
+        halfsuit_prediction = self.half_suits_in_play[torch.argmax(halfsuit_probabilities)]
 
         declare_dict = {k: set() for k in self.team}
 
@@ -221,6 +221,8 @@ class DeepQModel(BaseModel):
             card_location_prediction = torch.argmax(card_location_prediction)
             declare_dict[self.team[card_location_prediction]].add(current_card)
             current_card += 1
+
+        print(declare_dict, halfsuit_prediction)
         
         return (declare_dict, halfsuit_prediction)
 
@@ -244,7 +246,7 @@ class DeepQModel(BaseModel):
                     current_score += multiplier
                 else:
                     current_score -= multiplier
-            elif action[0] == 'sog':
+            elif action[0] == 'sog' or action == 'sog':
                 current_score = 0
             else:
                 _, action_type, state = action
@@ -254,7 +256,7 @@ class DeepQModel(BaseModel):
 
         train_declare_dataset = CustomDataset(declare_inputs, declare_targets)
         train_declare_dataloader = DataLoader(train_declare_dataset, batch_size=32, shuffle=True)
-        declare_loss_fn = torch.nn.CrossEntropyLoss()
+        declare_loss_fn = torch.nn.L1Loss()
         declare_optimizer = torch.optim.Adam(self.declaration_model.parameters(), lr=1e-3)
         self.declaration_model.train()
 
@@ -262,10 +264,13 @@ class DeepQModel(BaseModel):
         running_average = 0
         seen_so_far = 0
         declare_loss_average = 0
-        for index, (inp, target) in enumerate(pbar):
-            prediction = torch.squeeze(self.model(inp))
 
-            loss = declare_loss_fn(prediction, target)
+        
+        for index, (inp, target) in enumerate(pbar):
+            prediction = torch.squeeze(self.declaration_model(inp))
+            # breakpoint()
+
+            loss = declare_loss_fn(prediction, torch.squeeze(target))
 
             declare_optimizer.zero_grad()
             loss.backward()
@@ -276,7 +281,7 @@ class DeepQModel(BaseModel):
             running_average *= (seen_so_far - 1) / seen_so_far
             running_average += loss.item() / seen_so_far
 
-            declare_loss_average += loss.item() / len(train_dataloader)
+            declare_loss_average += loss.item() / len(train_declare_dataloader)
 
             pbar.set_postfix({'loss': running_average})
 
@@ -291,10 +296,14 @@ class DeepQModel(BaseModel):
         running_average = 0
         seen_so_far = 0
         loss_average = 0
+        # breakpoint()
+        # print([(
+        #     train_dataset[i][0].shape) 
+        #     for i in range(len(train_dataset))])
         for index, (inp, target) in enumerate(pbar):
             prediction = torch.squeeze(self.model(inp))
 
-            loss = loss_fn(prediction, target)
+            loss = loss_fn(prediction.float(), target.float())
 
             optimizer.zero_grad()
             loss.backward()
@@ -313,12 +322,11 @@ class DeepQModel(BaseModel):
 
     def _generate_valid_actions(self):
         # return an array with pairs of proposed card, proposed askee
-        #array of tuples (proposed card, proposed askee)
+        # array of tuples (proposed card, proposed askee)
         cards_in_my_suits = set()
         for card in self.cards:
             for hs_card in range(hs_of(card)*6, (hs_of(card)*6)+6):
                 cards_in_my_suits.add(hs_card)
-        
 
         actions = []
         for askee in self.other_team:
@@ -327,7 +335,7 @@ class DeepQModel(BaseModel):
                     actions.append((askee, card))
         
         return actions
-        #raise(NotImplementedError("TODO"))
+        # raise(NotImplementedError("TODO"))
 
     def take_action(self, turns):
         """
@@ -357,6 +365,6 @@ class DeepQModel(BaseModel):
 
             return (1, self._generate_declaration())
         else:
-            self.action_replay.append(('action', 'ask', valid_actions[best_predicted_action]))
+            self.action_replay.append(('action', 'ask', actions[best_predicted_action]))
 
             return (-1, valid_actions[best_predicted_action])
