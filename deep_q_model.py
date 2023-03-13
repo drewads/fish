@@ -237,7 +237,22 @@ class DeepQModel(BaseModel):
         return loss_average
 
     def _generate_valid_actions(self):
-        raise(NotImplementedError("TODO"))
+        # return an array with pairs of proposed card, proposed askee
+        #array of tuples (proposed card, proposed askee)
+        cards_in_my_suits = set()
+        for card in self.cards:
+            for hs_card in range(hs_of(card)*6, (hs_of(card)*6)+6):
+                cards_in_my_suits.add(hs_card)
+        
+
+        actions = []
+        for askee in self.other_team:
+            for card in cards_in_my_suits:
+                if card not in self.cards:
+                    actions.append((askee, card))
+        
+        return actions
+        #raise(NotImplementedError("TODO"))
 
     def take_action(self):
         """
