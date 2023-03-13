@@ -58,7 +58,7 @@ class CustomDataset(Dataset):
 
 
 class DeepQModel(BaseModel):
-    def __init__(self, player_number, team, other_team, starting_cards):
+    def __init__(self):
         """
         Parameters
         ----------
@@ -73,7 +73,7 @@ class DeepQModel(BaseModel):
         """
         self.action_replay = []
 
-        super(DeepQModel, self).__init__(player_number, team, other_team, starting_cards)
+        super(DeepQModel, self).__init__(None, None, None, None)
 
         self.model = QNetwork(len(self._generate_state((0, 0), False)))
         self.declaration_model = DeclarationNetwork(len(self._generate_state((0, 0), False)))

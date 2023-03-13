@@ -30,11 +30,10 @@ class RulesModel(BaseModel):
         starting_cards : list(int)
             A list of the cards the player starts with
         """
-        super(RulesModel, self).__init__(player_number, team, other_team, starting_cards)
-
-        self.startNewGame(player_number, team, other_team, starting_cards)
+        super(RulesModel, self).__init__(None, None, None, None)
         
     def startNewGame(self, player_number, team, other_team, starting_cards):
+        super(RulesModel, self).__init__(player_number, team, other_team, starting_cards)
         self.half_suits_in_play = list(range(int(54 / HS_LEN)))
         self.known_cards = {k: set() for k in team + other_team}
         for card in starting_cards:

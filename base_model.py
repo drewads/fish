@@ -16,10 +16,12 @@ class BaseModel:
         self.team = team
         self.other_team = other_team
         self.cards = starting_cards
-        self.startNewGame(player_number, team, other_team, starting_cards)
 
     def startNewGame(self, player_number, team, other_team, starting_cards):
-        pass
+        self.player_number = player_number
+        self.team = team
+        self.other_team = other_team
+        self.cards = starting_cards
 
     def record_action(self, asker, askee, card, transfer):
         """
