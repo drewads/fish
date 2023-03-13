@@ -227,7 +227,7 @@ class DeepQModel(BaseModel):
         return (declare_dict, halfsuit_prediction)
 
     def train_for_iteration(self):
-        self.action_replay = self.action_replay[-13_000:]
+        self.action_replay = self.action_replay[-50_000:]
         inputs = []
         targets = []
 
@@ -356,7 +356,7 @@ class DeepQModel(BaseModel):
         actions.append(declare_action)
 
         if random.random() < .1:
-            best_predicted_action = random.randint(0, len(actions))
+            best_predicted_action = random.randint(0, len(actions) - 1)
         else:
             action_tensors = torch.stack(actions)
 
