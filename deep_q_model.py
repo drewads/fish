@@ -221,8 +221,6 @@ class DeepQModel(BaseModel):
             card_location_prediction = torch.argmax(card_location_prediction)
             declare_dict[self.team[card_location_prediction]].add(current_card)
             current_card += 1
-
-        print(declare_dict, halfsuit_prediction)
         
         return (declare_dict, halfsuit_prediction)
 
