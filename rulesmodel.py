@@ -17,7 +17,7 @@ from pprint import pprint
 from base_model import BaseModel
 
 class RulesModel(BaseModel):
-    def __init__(self, player_number, team, other_team, starting_cards):
+    def __init__(self):
         """
         Parameters
         ----------
