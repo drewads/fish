@@ -2,6 +2,8 @@ import fish
 import rulesmodel
 import sys
 import random
+import math
+import statistics
 
 from fish import PLAYERS, TEAM_LEN, HS_LEN, DECK_LEN
 
@@ -39,8 +41,9 @@ def play_game(s = None):
 
     current_game = fish.Fish(seed=s)
     start_cards = [list(current_game.cards[i]) for i in players]
+    halfsuit_declarations= {0: [0,0],  1: [0,0]}
     
-    print(start_cards)
+    #print(start_cards)
     models = [rulesmodel.RulesModel(i, get_team(i), get_otherteam(i), start_cards[i]) for i in players]
     current_player = 0
     while (current_game.team_won() is None):
@@ -54,6 +57,18 @@ def play_game(s = None):
             if result is None:
                 raise Exception(" They declared a halfsuit that was invalid! Oh no!")
             
+
+            player_team = current_player//3
+            was_successful = result[0]
+
+            #print("player: ", current_player, " team is ", player_team)
+            #print("Prior halfsuit declarations = ", halfsuit_declarations)
+            if was_successful:
+                halfsuit_declarations[player_team][0] += 1
+                #print("declared correctly, increment hafsuit : ")
+            else:
+                halfsuit_declarations[player_team][1] += 1
+
             sets_left -= 1
             halfsuit = action_support[1]
             was_successful = result[0]
@@ -120,11 +135,12 @@ def play_game(s = None):
         #print("\n")
 
 
-    print("Game ended!")
-    print("halfsuits per team ", current_game.half_suits_per_team)
-    print("Team that won ", current_game.team_won)
-    print("\n")
-    return
+    #print("Game ended!")
+    #print("halfsuits per team ", current_game.half_suits_per_team)
+    #print("Team that won ", current_game.team_won())
+    #print("Halfsuit declarations = ", halfsuit_declarations)
+    #print("\n")
+    return halfsuit_declarations, current_game.team_won()
 
 
 def main():
@@ -136,9 +152,37 @@ def main():
     policy = compute(inputfilename, outputfilename)"""
     #play_game(s = 1501)
 
-    for i in range(250, 1500):
-        print("Game seed is = ", i)
-        play_game(s = i)
+
+
+    win_percent = []
+    loss_percent = []
+    for i in range(1, 1500):
+        if i % 100:
+            print("Game seed is = ", i)
+            
+        hd, winner = play_game(s = i)
+
+        loser = 0
+        if winner == 0:
+            loser = 1
+
+        if sum(hd[winner]) != 0:
+            #print("win percent = ", hd[winner][0]/sum(hd[winner]))
+            win_percent.append(hd[winner][0]/sum(hd[winner]))
+        else:
+            win_percent.append(0)
+
+        if sum(hd[loser]) != 0:
+            #print("loss percent = ", hd[loser][0]/sum(hd[loser]))
+            loss_percent.append(hd[loser][0]/sum(hd[loser]))
+        else:
+            loss_percent.append(0)
+        
+        
+    print("percent correct, winning team = ", statistics.mean(win_percent))
+    print("percent correct, losing team = ", statistics.mean(loss_percent))
+        
+
 
 
 
