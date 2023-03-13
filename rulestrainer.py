@@ -56,11 +56,6 @@ def play_game(models, s = None):
 
         if action == 1: # declared a halfsuit
             who_declares.append(current_player)
-            print("Current player is, ", current_player)
-            print(" declaring halfsuit : ")
-            print(" action_support[0] = ", action_support[0])
-            print(" action_support[1] = ", action_support[1])
-            input("")
             evidence = action_support[0]
             result = current_game.declare_halfsuit(current_player, evidence)
             if result is None:
