@@ -2,6 +2,9 @@ import fish
 import rulesmodel
 import sys
 import random
+import math
+import statistics
+import deep_q_model
 
 from fish import PLAYERS, TEAM_LEN, HS_LEN, DECK_LEN
 
@@ -28,8 +31,7 @@ def get_team(player):
     team = [i for i in range(3,6)]
     return team
 
-
-def play_game(s = None):
+def play_game(models, s = None):
     turns = 0
     turns_per_player = [0 for i in range(PLAYERS)]
     sets_left = DECK_LEN/HS_LEN 
@@ -39,9 +41,10 @@ def play_game(s = None):
 
     current_game = fish.Fish(seed=s)
     start_cards = [list(current_game.cards[i]) for i in players]
-    
-    print(start_cards)
-    models = [rulesmodel.RulesModel(i, get_team(i), get_otherteam(i), start_cards[i]) for i in players]
+    halfsuit_declarations= {0: [0,0],  1: [0,0]}
+    for player_number, model in enumerate(models):
+        model.startNewGame(player_number, get_team(player_number), get_otherteam(player_number), start_cards[player_number])
+    #print(start_cards)
     current_player = 0
     while (current_game.team_won() is None):
         # have the model(player) decide what card to ask for
@@ -54,6 +57,18 @@ def play_game(s = None):
             if result is None:
                 raise Exception(" They declared a halfsuit that was invalid! Oh no!")
             
+
+            player_team = current_player//3
+            was_successful = result[0]
+
+            #print("player: ", current_player, " team is ", player_team)
+            #print("Prior halfsuit declarations = ", halfsuit_declarations)
+            if was_successful:
+                halfsuit_declarations[player_team][0] += 1
+                #print("declared correctly, increment hafsuit : ")
+            else:
+                halfsuit_declarations[player_team][1] += 1
+
             sets_left -= 1
             halfsuit = action_support[1]
             was_successful = result[0]
@@ -120,11 +135,12 @@ def play_game(s = None):
         #print("\n")
 
 
-    print("Game ended!")
-    print("halfsuits per team ", current_game.half_suits_per_team)
-    print("Team that won ", current_game.team_won)
-    print("\n")
-    return
+    #print("Game ended!")
+    #print("halfsuits per team ", current_game.half_suits_per_team)
+    #print("Team that won ", current_game.team_won())
+    #print("Halfsuit declarations = ", halfsuit_declarations)
+    #print("\n")
+    return halfsuit_declarations, current_game.team_won()
 
 
 def main():
@@ -136,9 +152,43 @@ def main():
     policy = compute(inputfilename, outputfilename)"""
     #play_game(s = 1501)
 
-    for i in range(250, 1500):
-        print("Game seed is = ", i)
-        play_game(s = i)
+    team_1_percent = []
+    team_2_percent = []
+    winners = []
+    for i in range(1, 1500):
+        if i % 100:
+            print("Game seed is = ", i)
+
+        models = [deep_q_model.DeepQModel()] + [rulesmodel.RulesModel() for _ in range(PLAYERS - 1)]
+        
+        num_games = 10
+        for game_number in range(num_games):
+            print("Playing game", game_number)
+            hd, winner = play_game(models, s = i)
+            print("Winner is", winner)
+            winners.append(winner)
+
+            if sum(hd[0]) != 0:
+                #print("win percent = ", hd[winner][0]/sum(hd[winner]))
+                team_1_percent.append(hd[0][0]/sum(hd[0]))
+            else:
+                team_1_percent.append(0)
+
+            if sum(hd[1]) != 0:
+                #print("loss percent = ", hd[loser][0]/sum(hd[loser]))
+                team_2_percent.append(hd[1][0]/sum(hd[1]))
+            else:
+                team_2_percent.append(0)
+
+            models[0].train_for_iteration()
+
+            
+        
+    print("team 1 won", winners.count(0), "times. team 2 won", winners.count(1), "times.")
+    print("percent correct, team 1 = ", statistics.mean(team_1_percent))
+    print("percent correct, team 2 = ", statistics.mean(team_2_percent))
+        
+
 
 
 
