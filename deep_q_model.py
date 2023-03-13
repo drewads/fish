@@ -227,9 +227,9 @@ class DeepQModel(BaseModel):
         for action in reversed(self.action_replay):
             if action[0] == 'halfsuit_claim':
                 _, team, halfsuit, successful, card_locations, state = action
-                multiplier = 1
+                multiplier = -1
                 if self.player_number in team:
-                    multiplier = -1
+                    multiplier = 1
                     declare_inputs.append(state)
                     declare_targets.append(self._generate_declare_target(halfsuit, card_locations))
                 if successful:
@@ -243,6 +243,34 @@ class DeepQModel(BaseModel):
                 inputs.append(state)
                 targets.append(current_score)
                 current_score *= self.discount_factor
+
+        train_declare_dataset = CustomDataset(declare_inputs, declare_targets)
+        train_declare_dataloader = DataLoader(train_declare_dataset, batch_size=32, shuffle=True)
+        declare_loss_fn = torch.nn.MSELoss()
+        declare_optimizer = torch.optim.Adam(self.declaration_model.parameters(), lr=1e-3)
+        self.declaration_model.train()
+
+        pbar = tqdm(train_declare_dataloader, desc="Training Declare", leave=False, position=1)
+        running_average = 0
+        seen_so_far = 0
+        declare_loss_average = 0
+        for index, (inp, target) in enumerate(pbar):
+            prediction = torch.squeeze(self.model(inp))
+
+            loss = declare_loss_fn(prediction, target)
+
+            declare_optimizer.zero_grad()
+            loss.backward()
+
+            declare_optimizer.step()
+
+            seen_so_far += 1
+            running_average *= (seen_so_far - 1) / seen_so_far
+            running_average += loss.item() / seen_so_far
+
+            declare_loss_average += loss.item() / len(train_dataloader)
+
+            pbar.set_postfix({'loss': running_average})
 
         train_dataset = CustomDataset(inputs, targets)
         train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
@@ -273,7 +301,7 @@ class DeepQModel(BaseModel):
 
             pbar.set_postfix({'loss': running_average})
 
-        return loss_average
+        return (loss_average, declare_loss_average)
 
     def _generate_valid_actions(self):
         # return an array with pairs of proposed card, proposed askee
