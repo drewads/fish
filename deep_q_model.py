@@ -3,6 +3,7 @@ from base_model import BaseModel
 from fish import HS_LEN, hs_of
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
+import random
 
 
 class QNetwork(torch.nn.Module):
@@ -225,6 +226,7 @@ class DeepQModel(BaseModel):
         return (declare_dict, halfsuit_prediction)
 
     def train_for_iteration(self):
+        self.action_replay = self.action_replay[-13_000:]
         inputs = []
         targets = []
 
@@ -301,7 +303,7 @@ class DeepQModel(BaseModel):
         for index, (inp, target) in enumerate(pbar):
             prediction = torch.squeeze(self.model(inp))
 
-            loss = loss_fn(prediction.float(), target.float())
+            loss = loss_fn(prediction.float(), torch.squeeze(target.float()))
 
             optimizer.zero_grad()
             loss.backward()
@@ -352,11 +354,14 @@ class DeepQModel(BaseModel):
         declare_action = self._generate_state((0, 0), True)
         actions.append(declare_action)
 
-        action_tensors = torch.stack(actions)
+        if random.random() < .1:
+            best_predicted_action = random.randint(0, len(actions))
+        else:
+            action_tensors = torch.stack(actions)
 
-        self.model.eval()
-        predicted_value = self.model(action_tensors)
-        best_predicted_action = torch.argmax(predicted_value)
+            self.model.eval()
+            predicted_value = self.model(action_tensors)
+            best_predicted_action = torch.argmax(predicted_value)
 
         if best_predicted_action == len(actions) - 1:
             self.action_replay.append(('action', 'declare', declare_action))
