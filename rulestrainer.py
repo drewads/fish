@@ -161,7 +161,7 @@ def main():
     num_games = 10
     for game_number in range(num_games):
         print("Playing game", game_number)
-        hd, winner = play_game(models, s = i)
+        hd, winner = play_game(models, s = game_number)
         print("Winner is", winner)
         winners.append(winner)
 
