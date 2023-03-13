@@ -76,6 +76,7 @@ class DeepQModel(BaseModel):
         self.startNewGame(player_number, team, other_team, starting_cards)
 
         self.model = QNetwork(len(self._generate_state((0, 0), False)))
+        self.declaration_model = DeclarationNetwork(len(self._generate_state((0, 0), False)))
         self.action_replay = [('sog')]
         self.discount_factor = .96  # I just randomly chose this lol
 
@@ -206,6 +207,15 @@ class DeepQModel(BaseModel):
         location_stacked_tensor = torch.cat(location_tensors)
         return torch.cat([halfsuit_tensor, location_stacked_tensor])
 
+     def _generate_declaration(self):
+        state = self._generate_state((0, 0), True)
+        declaration_prediction = self.declaration_model(state)
+        halfsuit_prediction = torch.argmax(declaration_prediction[:9])
+
+        
+        pass
+        # return (evidence, halfsuit index)
+
     def train_for_iteration(self):
         inputs = []
         targets = []
@@ -282,9 +292,6 @@ class DeepQModel(BaseModel):
         
         return actions
         #raise(NotImplementedError("TODO"))
-
-    def _generate_declaration(self):
-        pass
 
     def take_action(self):
         """
