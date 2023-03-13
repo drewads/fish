@@ -155,32 +155,29 @@ def main():
     team_1_percent = []
     team_2_percent = []
     winners = []
-    for i in range(1, 1500):
-        if i % 100:
-            print("Game seed is = ", i)
 
-        models = [deep_q_model.DeepQModel()] + [rulesmodel.RulesModel() for _ in range(PLAYERS - 1)]
-        
-        num_games = 10
-        for game_number in range(num_games):
-            print("Playing game", game_number)
-            hd, winner = play_game(models, s = i)
-            print("Winner is", winner)
-            winners.append(winner)
+    models = [deep_q_model.DeepQModel()] + [rulesmodel.RulesModel() for _ in range(PLAYERS - 1)]
+    
+    num_games = 10
+    for game_number in range(num_games):
+        print("Playing game", game_number)
+        hd, winner = play_game(models, s = i)
+        print("Winner is", winner)
+        winners.append(winner)
 
-            if sum(hd[0]) != 0:
-                #print("win percent = ", hd[winner][0]/sum(hd[winner]))
-                team_1_percent.append(hd[0][0]/sum(hd[0]))
-            else:
-                team_1_percent.append(0)
+        if sum(hd[0]) != 0:
+            #print("win percent = ", hd[winner][0]/sum(hd[winner]))
+            team_1_percent.append(hd[0][0]/sum(hd[0]))
+        else:
+            team_1_percent.append(0)
 
-            if sum(hd[1]) != 0:
-                #print("loss percent = ", hd[loser][0]/sum(hd[loser]))
-                team_2_percent.append(hd[1][0]/sum(hd[1]))
-            else:
-                team_2_percent.append(0)
+        if sum(hd[1]) != 0:
+            #print("loss percent = ", hd[loser][0]/sum(hd[loser]))
+            team_2_percent.append(hd[1][0]/sum(hd[1]))
+        else:
+            team_2_percent.append(0)
 
-            models[0].train_for_iteration()
+        models[0].train_for_iteration()
 
             
         
