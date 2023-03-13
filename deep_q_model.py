@@ -55,7 +55,7 @@ class DeepQModel(BaseModel):
 
         self.startNewGame(player_number, team, other_team, starting_cards)
 
-        self.model = QNetwork(len(self._generate_state((0, 0))))
+        self.model = QNetwork(len(self._generate_state((0, 0), False)))
         self.action_replay = [('sog')]
         self.discount_factor = .96  # I just randomly chose this lol
 
@@ -83,10 +83,15 @@ class DeepQModel(BaseModel):
 
         self.action_replay.append(('sog'))
 
-    def _generate_state(self, proposed_action):
+    def _generate_state(self, proposed_action, declare):
         proposed_card, proposed_askee = proposed_action
         proposed_card_tensor = torch.nn.functional.one_hot(torch.tensor(proposed_card), num_classes=54)
         proposed_action_tensor = torch.nn.functional.one_hot(torch.tensor(proposed_action), num_classes=54)
+
+        if declare:
+            proposed_card_tensor = torch.zeros(len(proposed_card_tensor))
+            proposed_action_tensor = torch.zeros(len(proposed_action_tensor))
+
         known_cards_tensor = torch.zeros(54 * 6)
         for player, cards in sorted(self.known_cards.items()):
             for card in cards:
@@ -100,7 +105,8 @@ class DeepQModel(BaseModel):
         for player, counts in sorted(self.known_minimum_in_half_suit.items()):
             for index, count in enumerate(counts):
                 known_minimum_in_half_suit_tensor[(player * 9) + index] = count
-        return torch.cat([proposed_card_tensor, proposed_action_tensor, known_cards_tensor, known_not_cards_tensor, num_cards_tensor, known_minimum_in_half_suit_tensor])
+        declare_indicator = torch.tensor(1 if declare else 0)
+        return torch.cat([declare_indicator, proposed_card_tensor, proposed_action_tensor, known_cards_tensor, known_not_cards_tensor, num_cards_tensor, known_minimum_in_half_suit_tensor])
 
     def record_action(self, asker, askee, card, transfer):
         """
@@ -245,8 +251,13 @@ class DeepQModel(BaseModel):
 
         """
         valid_actions = self._generate_valid_actions()
+        actions = [self._generate_state(action, False) for action in valid_actions]
 
-        action_tensors = torch.stack([self._generate_state(action) for action in valid_actions])
+        declare_action = torch.zeros(len(self._generate_state((0, 0), True)))
+        declare_action[0] = 1
+        actions.append(declare_action)
+
+        action_tensors = torch.stack(actions)
 
         self.model.eval()
         predicted_value = self.model(action_tensors)
