@@ -34,7 +34,7 @@ def play_game(s = None):
     turns_per_player = [0 for i in range(PLAYERS)]
     sets_left = DECK_LEN/HS_LEN 
     players = [i for i in range(PLAYERS)]
-
+    
     time_since_transfer = 0
 
     current_game = fish.Fish(seed=s)
@@ -134,7 +134,7 @@ def main():
     inputfilename = sys.argv[1]
     outputfilename = sys.argv[2]
     policy = compute(inputfilename, outputfilename)"""
-    #play_game(s = 19)
+    #play_game(s = 1501)
 
     for i in range(250, 1500):
         print("Game seed is = ", i)
