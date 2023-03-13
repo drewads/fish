@@ -27,7 +27,7 @@ class QNetwork(torch.nn.Module):
 
 class DeclarationNetwork(torch.nn.Module):
     def __init__(self, inputSize):
-        super(QNetwork, self).__init__()
+        super(DeclarationNetwork, self).__init__()
         self.network = torch.nn.Sequential(
             torch.nn.Linear(inputSize, 1024),
             torch.nn.PReLU(),
@@ -37,7 +37,7 @@ class DeclarationNetwork(torch.nn.Module):
             torch.nn.PReLU(),
             torch.nn.Linear(1024, 1024),
             torch.nn.PReLU(),
-            torch.nn.Linear(1024, 9 + (9 * 6))
+            torch.nn.Linear(1024, 9 + (6 * 6))
             )
 
     def forward(self, x):
@@ -71,13 +71,12 @@ class DeepQModel(BaseModel):
         starting_cards : list(int)
             A list of the cards the player starts with
         """
-        super(DeepQModel, self).__init__(player_number, team, other_team, starting_cards)
+        self.action_replay = []
 
-        self.startNewGame(player_number, team, other_team, starting_cards)
+        super(DeepQModel, self).__init__(player_number, team, other_team, starting_cards)
 
         self.model = QNetwork(len(self._generate_state((0, 0), False)))
         self.declaration_model = DeclarationNetwork(len(self._generate_state((0, 0), False)))
-        self.action_replay = [('sog')]
         self.discount_factor = .96  # I just randomly chose this lol
 
     def startNewGame(self, player_number, team, other_team, starting_cards):
@@ -126,7 +125,7 @@ class DeepQModel(BaseModel):
         for player, counts in sorted(self.known_minimum_in_half_suit.items()):
             for index, count in enumerate(counts):
                 known_minimum_in_half_suit_tensor[(player * 9) + index] = count
-        declare_indicator = torch.tensor(1 if declare else 0)
+        declare_indicator = torch.tensor([1 if declare else 0])
         return torch.cat([declare_indicator, proposed_card_tensor, proposed_askee_tensor, known_cards_tensor, known_not_cards_tensor, num_cards_tensor, known_minimum_in_half_suit_tensor])
 
     def record_action(self, asker, askee, card, transfer):
@@ -207,14 +206,23 @@ class DeepQModel(BaseModel):
         location_stacked_tensor = torch.cat(location_tensors)
         return torch.cat([halfsuit_tensor, location_stacked_tensor])
 
-     def _generate_declaration(self):
+    def _generate_declaration(self):
+        breakpoint()
         state = self._generate_state((0, 0), True)
         declaration_prediction = self.declaration_model(state)
         halfsuit_prediction = torch.argmax(declaration_prediction[:9])
 
+        declare_dict = {k: set() for k in self.team}
+
+        current_card = int(halfsuit_prediction) * 6
+        for index in range(6):
+            card_location_prediction = declaration_prediction[9 + (index * 6):9 + ((index + 1) * 6)]
+            card_location_prediction = card_location_prediction[self.team]
+            card_location_prediction = torch.argmax(card_location_prediction)
+            declare_dict[self.team[card_location_prediction]].add(current_card)
+            current_card += 1
         
-        pass
-        # return (evidence, halfsuit index)
+        return (declare_dict, halfsuit_prediction)
 
     def train_for_iteration(self):
         inputs = []
@@ -251,7 +259,36 @@ class DeepQModel(BaseModel):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
 
         self.model.train()
-        pbar = tqdm(train_dataloader, desc="Training", leave=False, position=1)
+        pbar = tqdm(train_dataloader, desc="Training action network", leave=False, position=1)
+        running_average = 0
+        seen_so_far = 0
+        loss_average = 0
+        for index, (inp, target) in enumerate(pbar):
+            prediction = torch.squeeze(self.model(inp))
+
+            loss = loss_fn(prediction, target)
+
+            optimizer.zero_grad()
+            loss.backward()
+
+            optimizer.step()
+
+            seen_so_far += 1
+            running_average *= (seen_so_far - 1) / seen_so_far
+            running_average += loss.item() / seen_so_far
+
+            loss_average += loss.item() / len(train_dataloader)
+
+            pbar.set_postfix({'loss': running_average})
+
+        train_dataset = CustomDataset(declare_inputs, declare_targets)
+        train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+
+        loss_fn = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+
+        self.model.train()
+        pbar = tqdm(train_dataloader, desc="Training declare network", leave=False, position=1)
         running_average = 0
         seen_so_far = 0
         loss_average = 0
@@ -293,7 +330,7 @@ class DeepQModel(BaseModel):
         return actions
         #raise(NotImplementedError("TODO"))
 
-    def take_action(self):
+    def take_action(self, turns):
         """
         Returns:
         if action is to ask for a card:
