@@ -209,6 +209,7 @@ class DeepQModel(BaseModel):
 
     def _generate_declaration(self):
         state = self._generate_state((0, 0), True)
+        self.declaration_model.eval()
         declaration_prediction = self.declaration_model(state)
         halfsuit_probabilities = declaration_prediction[:9][self.half_suits_in_play]
         halfsuit_prediction = self.half_suits_in_play[torch.argmax(halfsuit_probabilities)]
@@ -265,7 +266,7 @@ class DeepQModel(BaseModel):
         seen_so_far = 0
         declare_loss_average = 0
 
-        
+        self.declaration_model.train()
         for index, (inp, target) in enumerate(pbar):
             prediction = torch.squeeze(self.declaration_model(inp))
             # breakpoint()
