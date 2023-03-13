@@ -75,8 +75,8 @@ class DeepQModel(BaseModel):
 
         super(DeepQModel, self).__init__(None, None, None, None)
 
-        self.model = QNetwork(len(self._generate_state((0, 0), False)))
-        self.declaration_model = DeclarationNetwork(len(self._generate_state((0, 0), False)))
+        self.model = QNetwork(769)
+        self.declaration_model = DeclarationNetwork(769)
         self.discount_factor = .96  # I just randomly chose this lol
 
     def startNewGame(self, player_number, team, other_team, starting_cards):
@@ -246,7 +246,7 @@ class DeepQModel(BaseModel):
                     current_score += multiplier
                 else:
                     current_score -= multiplier
-            elif action[0] == 'sog':
+            elif action[0] == 'sog' or action == 'sog':
                 current_score = 0
             else:
                 _, action_type, state = action
@@ -264,10 +264,13 @@ class DeepQModel(BaseModel):
         running_average = 0
         seen_so_far = 0
         declare_loss_average = 0
-        for index, (inp, target) in enumerate(pbar):
-            prediction = torch.squeeze(self.model(inp))
 
-            loss = declare_loss_fn(prediction, target)
+        
+        for index, (inp, target) in enumerate(pbar):
+            prediction = torch.squeeze(self.declaration_model(inp))
+            # breakpoint()
+
+            loss = declare_loss_fn(prediction, torch.squeeze(target))
 
             declare_optimizer.zero_grad()
             loss.backward()
@@ -293,10 +296,14 @@ class DeepQModel(BaseModel):
         running_average = 0
         seen_so_far = 0
         loss_average = 0
+        # breakpoint()
+        # print([(
+        #     train_dataset[i][0].shape) 
+        #     for i in range(len(train_dataset))])
         for index, (inp, target) in enumerate(pbar):
             prediction = torch.squeeze(self.model(inp))
 
-            loss = loss_fn(prediction, target)
+            loss = loss_fn(prediction.float(), target.float())
 
             optimizer.zero_grad()
             loss.backward()
@@ -358,6 +365,6 @@ class DeepQModel(BaseModel):
 
             return (1, self._generate_declaration())
         else:
-            self.action_replay.append(('action', 'ask', valid_actions[best_predicted_action]))
+            self.action_replay.append(('action', 'ask', actions[best_predicted_action]))
 
             return (-1, valid_actions[best_predicted_action])
