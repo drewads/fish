@@ -55,6 +55,11 @@ def play_game(models, s = None):
 
         if action == 1: # declared a halfsuit
             who_declares.append(current_player)
+            print("Current player is, ", current_player)
+            print(" declaring halfsuit : ")
+            print(" action_support[0] = ", action_support[0])
+            print(" action_support[1] = ", action_support[1])
+            input("")
             evidence = action_support[0]
             result = current_game.declare_halfsuit(current_player, evidence)
             if result is None:
@@ -185,8 +190,6 @@ def main():
                 team_2_percent.append(0)
         (loss_average, declare_loss_average) = models[0].train_for_iteration()
         print("loss:", loss_average, "declare loss:", declare_loss_average)
-
-            
         
     print("team 1 won", winners.count(0), "times. team 2 won", winners.count(1), "times.")
     print("percent correct, team 1 = ", statistics.mean(team_1_percent))
