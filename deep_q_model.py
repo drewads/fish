@@ -183,6 +183,18 @@ class DeepQModel(BaseModel):
         successful : bool
             Whether the claim is successful
         """
+        if successful and self.player_number in team:
+            declare_dict, halfsuit_prediction = self._generate_declaration()
+            if halfsuit_prediction == halfsuit:
+                correct = True
+                for card, location in card_locations.items():
+                    if card not in declare_dict[location]:
+                        correct = False
+                        break
+                if correct:
+                    declare_action = self._generate_state((0, 0), True)
+                    self.action_replay.append(('action', 'declare', declare_action))
+
         self.action_replay.append(('halfsuit_claim', team, halfsuit, successful, card_locations, self._generate_state((0, 0), True)))
 
         self.half_suits_in_play.remove(halfsuit)
@@ -227,7 +239,7 @@ class DeepQModel(BaseModel):
         return (declare_dict, halfsuit_prediction)
 
     def train_for_iteration(self):
-        self.action_replay = self.action_replay[-50_000:]
+        self.action_replay = self.action_replay[-100_000:]
         inputs = []
         targets = []
 
