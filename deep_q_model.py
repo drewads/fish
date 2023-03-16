@@ -11,7 +11,9 @@ class QNetwork(torch.nn.Module):
     def __init__(self, inputSize):
         super(QNetwork, self).__init__()
         self.network = torch.nn.Sequential(
-            torch.nn.Linear(inputSize, 1024),
+            torch.nn.Linear(inputSize, 2048),
+            torch.nn.PReLU(),
+            torch.nn.Linear(2048, 1024),
             torch.nn.PReLU(),
             torch.nn.Linear(1024, 1024),
             torch.nn.PReLU(),
@@ -31,7 +33,9 @@ class DeclarationNetwork(torch.nn.Module):
     def __init__(self, inputSize):
         super(DeclarationNetwork, self).__init__()
         self.network = torch.nn.Sequential(
-            torch.nn.Linear(inputSize, 1024),
+            torch.nn.Linear(inputSize, 2048),
+            torch.nn.PReLU(),
+            torch.nn.Linear(2048, 1024),
             torch.nn.PReLU(),
             torch.nn.Linear(1024, 1024),
             torch.nn.PReLU(),
@@ -60,7 +64,7 @@ class CustomDataset(Dataset):
 
 
 class DeepQModel(BaseModel):
-    def __init__(self, model_prefix='fish_deep_q_model'):
+    def __init__(self, model_prefix='fish_deep_q_model', seed_model_name=None, device=torch.device("cuda" if torch.cuda.is_available() else "cpu")):
         """
         Parameters
         ----------
@@ -78,14 +82,23 @@ class DeepQModel(BaseModel):
         super(DeepQModel, self).__init__(None, None, None, None)
 
         self.model_prefix = model_prefix
+        self.device = device
         try:
-            self.model = torch.load(self.model_prefix + '_model.pt')
+            self.model = torch.load(self.model_prefix + '_model.pt').to(self.device)
         except FileNotFoundError:
-            self.model = QNetwork(769)
+            self.model = QNetwork(769).to(self.device)
         try:
-            self.declaration_model = torch.load(self.model_prefix + '_declaration_model.pt')
+            self.declaration_model = torch.load(self.model_prefix + '_declaration_model.pt').to(self.device)
         except FileNotFoundError:
-            self.declaration_model = DeclarationNetwork(769)
+            self.declaration_model = DeclarationNetwork(769).to(self.device)
+
+        if seed_model_name:
+            try:
+                self.model = torch.load(seed_model_name + '_model.pt').to(self.device)
+                self.declaration_model = torch.load(seed_model_name + '_declaration_model.pt').to(self.device)
+                print("Model successfully seeded")
+            except FileNotFoundError:
+                pass
         self.discount_factor = .96
 
     def __del__(self):
@@ -234,7 +247,7 @@ class DeepQModel(BaseModel):
     def _generate_declaration(self):
         state = self._generate_state((0, 0), True)
         self.declaration_model.eval()
-        declaration_prediction = self.declaration_model(state)
+        declaration_prediction = self.declaration_model(state.to(self.device))
         halfsuit_probabilities = declaration_prediction[:9][self.half_suits_in_play]
         halfsuit_prediction = self.half_suits_in_play[torch.argmax(halfsuit_probabilities)]
 
@@ -249,9 +262,56 @@ class DeepQModel(BaseModel):
             current_card += 1
         
         return (declare_dict, halfsuit_prediction)
+    
+    '''
+    def _generate_declaration(self):
+        for half_suit_to_find in self.half_suits_in_play:
+            cards_in_hs = [card for card in range(54) if hs_of(card) == half_suit_to_find]
+            valid_halfsuit = False
+            for card in cards_in_hs:
+                if card in self.cards:
+                    valid_halfsuit = True
+                    break
+            if valid_halfsuit:
+                # print(f"Searching for halfsuit {half_suit_to_find}")
+                break
+
+        declare_dict = {k: set() for k in self.team}
+        cards_with_unknown_location = list(cards_in_hs)
+        for card in cards_in_hs:
+            for player in self.team:
+                if card in self.known_cards[player]:
+                    declare_dict[player].add(card)
+                    cards_with_unknown_location.remove(card)
+
+        if len(cards_with_unknown_location) != 0:
+            other_team_members = set(self.team) - {self.player_number}
+            for o_team_member in other_team_members:
+                if self.known_minimum_in_half_suit[o_team_member][half_suit_to_find] <= 0:
+                    team_member_with_cards = list(other_team_members - {o_team_member})[0]
+                    for card in cards_with_unknown_location:
+                        declare_dict[team_member_with_cards].add(card)
+                    cards_with_unknown_location = []
+
+        if len(cards_with_unknown_location) != 0:
+            cwul_copy = list(cards_with_unknown_location)
+            for card in cards_with_unknown_location:
+                for player in declare_dict:
+                    if self.known_minimum_in_half_suit[player][hs_of(card)] < len(declare_dict[player]):
+                        declare_dict[player].add(card)
+                        cwul_copy.remove(card)
+                        break
+            cards_with_unknown_location = cwul_copy
+
+
+        for card in cards_with_unknown_location:
+            player = random.choice(self.team)
+            declare_dict[player].add(card)
+        return (declare_dict, half_suit_to_find)'''
 
     def train_for_iteration(self):
-        self.action_replay = self.action_replay[-100_000:]
+        print(f'Replay length is {len(self.action_replay)}')
+        self.action_replay = self.action_replay[-500_000:]
         inputs = []
         targets = []
 
@@ -292,10 +352,10 @@ class DeepQModel(BaseModel):
 
         self.declaration_model.train()
         for index, (inp, target) in enumerate(pbar):
-            prediction = torch.squeeze(self.declaration_model(inp))
+            prediction = torch.squeeze(self.declaration_model(inp.to(self.device)))
             # breakpoint()
 
-            loss = declare_loss_fn(prediction, torch.squeeze(target))
+            loss = declare_loss_fn(prediction, torch.squeeze(target.to(self.device)))
 
             declare_optimizer.zero_grad()
             loss.backward()
@@ -326,9 +386,9 @@ class DeepQModel(BaseModel):
         #     train_dataset[i][0].shape) 
         #     for i in range(len(train_dataset))])
         for index, (inp, target) in enumerate(pbar):
-            prediction = torch.squeeze(self.model(inp))
+            prediction = torch.squeeze(self.model(inp.to(self.device)))
 
-            loss = loss_fn(prediction.float(), torch.squeeze(target.float()))
+            loss = loss_fn(prediction.float(), torch.squeeze(target.to(self.device).float()))
 
             optimizer.zero_grad()
             loss.backward()
@@ -379,13 +439,18 @@ class DeepQModel(BaseModel):
         declare_action = self._generate_state((0, 0), True)
         actions.append(declare_action)
 
+        if turns > 250:
+            self.action_replay.append(('action', 'declare', declare_action))
+
+            return (1, self._generate_declaration())
+
         if random.random() < (1 / np.sqrt(batch_number + 100)):
             best_predicted_action = random.randint(0, len(actions) - 1)
         else:
             action_tensors = torch.stack(actions)
 
             self.model.eval()
-            predicted_value = self.model(action_tensors)
+            predicted_value = self.model(action_tensors.to(self.device))
             best_predicted_action = torch.argmax(predicted_value)
 
         if best_predicted_action == len(actions) - 1:

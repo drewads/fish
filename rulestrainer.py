@@ -151,7 +151,7 @@ def play_game(models, batch, s = None):
     return halfsuit_declarations, current_game.team_won(), who_declares, num_actions_player, correct_declares
 
 
-def main(csv_name='model_data.csv', model_count=0):
+def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_model-0'):
     """if len(sys.argv) != 3:
         raise Exception("usage: python project1.py <infile>.csv <outfile>")
 
@@ -164,15 +164,15 @@ def main(csv_name='model_data.csv', model_count=0):
     team_2_percent = []
     winners = []
 
-    models = [deep_q_model.DeepQModel(f'fish_deep_q_model-{i}') for i in range(model_count)] + [rulesmodel.RulesModel() for _ in range(PLAYERS - model_count)]
+    models = [deep_q_model.DeepQModel(f'fish_deep_q_model-{i}-{csv_name.replace("_data.csv", "")}', seed_model_name) for i in range(model_count)] + [rulesmodel.RulesModel() for _ in range(PLAYERS - model_count)]
     
     info_for_csv = [['batch_number', 'action_loss', 'declare_loss', 'win_%', 'declare_accuracy_%']]
-    num_batches = 600
+    num_batches = 5_000
     try:
         for batch_number in range(num_batches):
             batch_wins = 0
             print("Playing batch", batch_number)
-            for i in range(10):
+            for i in range(20):
                 hd, winner, who_declares, num_actions_player, correct_declares = play_game(models, batch_number)
                 print("Winner is", winner)
                 print("QModel declares", who_declares.count(0), f'times ({correct_declares.count(0)} correct). Team 1 declares', who_declares.count(0) + who_declares.count(1) + who_declares.count(2), "times. Team 2 declares", who_declares.count(3) + who_declares.count(4) + who_declares.count(5), "times.")
