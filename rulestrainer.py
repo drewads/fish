@@ -5,6 +5,7 @@ import random
 import math
 import statistics
 import deep_q_model
+import numpy as np
 
 from fish import PLAYERS, TEAM_LEN, HS_LEN, DECK_LEN
 
@@ -31,7 +32,7 @@ def get_team(player):
     team = [i for i in range(3,6)]
     return team
 
-def play_game(models, s = None):
+def play_game(models, batch, s = None):
     turns = 0
     turns_per_player = [0 for i in range(PLAYERS)]
     sets_left = DECK_LEN/HS_LEN 
@@ -52,7 +53,7 @@ def play_game(models, s = None):
     while (current_game.team_won() is None):
         # have the model(player) decide what card to ask for
         
-        (action, action_support) = models[current_player].take_action(time_since_transfer)
+        (action, action_support) = models[current_player].take_action(time_since_transfer, batch)
 
         if action == 1: # declared a halfsuit
             who_declares.append(current_player)
@@ -150,7 +151,7 @@ def play_game(models, s = None):
     return halfsuit_declarations, current_game.team_won(), who_declares, num_actions_player, correct_declares
 
 
-def main():
+def main(csv_name='model_data.csv', model_count=0):
     """if len(sys.argv) != 3:
         raise Exception("usage: python project1.py <infile>.csv <outfile>")
 
@@ -163,35 +164,53 @@ def main():
     team_2_percent = []
     winners = []
 
-    models = [deep_q_model.DeepQModel()] + [rulesmodel.RulesModel() for _ in range(PLAYERS - 1)]
+    models = [deep_q_model.DeepQModel() for _ in range(model_count)] + [rulesmodel.RulesModel() for _ in range(PLAYERS - model_count)]
     
-    num_batches = 100
-    for batch_number in range(num_batches):
-        print("Playing batch", batch_number)
-        for i in range(10):
-            hd, winner, who_declares, num_actions_player, correct_declares = play_game(models)
-            print("Winner is", winner)
-            print("QModel declares", who_declares.count(0), f'times ({correct_declares.count(0)} correct). Team 1 declares', who_declares.count(0) + who_declares.count(1) + who_declares.count(2), "times. Team 2 declares", who_declares.count(3) + who_declares.count(4) + who_declares.count(5), "times.")
-            print("Actions per player: 0:", num_actions_player[0], "1:", num_actions_player[1], "2:", num_actions_player[2], "3:", num_actions_player[3], "4:",num_actions_player[4], "5:", num_actions_player[5])
-            winners.append(winner)
+    info_for_csv = [['batch_number', 'action_loss', 'declare_loss', 'win_%', 'declare_accuracy_%']]
+    num_batches = 600
+    try:
+        for batch_number in range(num_batches):
+            batch_wins = 0
+            print("Playing batch", batch_number)
+            for i in range(10):
+                hd, winner, who_declares, num_actions_player, correct_declares = play_game(models, batch_number)
+                print("Winner is", winner)
+                print("QModel declares", who_declares.count(0), f'times ({correct_declares.count(0)} correct). Team 1 declares', who_declares.count(0) + who_declares.count(1) + who_declares.count(2), "times. Team 2 declares", who_declares.count(3) + who_declares.count(4) + who_declares.count(5), "times.")
+                print("Actions per player: 0:", num_actions_player[0], "1:", num_actions_player[1], "2:", num_actions_player[2], "3:", num_actions_player[3], "4:",num_actions_player[4], "5:", num_actions_player[5])
+                winners.append(winner)
 
-            if sum(hd[0]) != 0:
-                #print("win percent = ", hd[winner][0]/sum(hd[winner]))
-                team_1_percent.append(hd[0][0]/sum(hd[0]))
-            else:
-                team_1_percent.append(0)
+                if winner == 0:
+                    batch_wins += 1
 
-            if sum(hd[1]) != 0:
-                #print("loss percent = ", hd[loser][0]/sum(hd[loser]))
-                team_2_percent.append(hd[1][0]/sum(hd[1]))
-            else:
-                team_2_percent.append(0)
-        (loss_average, declare_loss_average) = models[0].train_for_iteration()
-        print("loss:", loss_average, "declare loss:", declare_loss_average)
+                if sum(hd[0]) != 0:
+                    #print("win percent = ", hd[winner][0]/sum(hd[winner]))
+                    team_1_percent.append(hd[0][0]/sum(hd[0]))
+                else:
+                    team_1_percent.append(0)
+
+                if sum(hd[1]) != 0:
+                    #print("loss percent = ", hd[loser][0]/sum(hd[loser]))
+                    team_2_percent.append(hd[1][0]/sum(hd[1]))
+                else:
+                    team_2_percent.append(0)
+            loss_average = 0
+            declare_loss_average = 0
+            for i in range(model_count):
+                (m_loss_average, m_declare_loss_average) = models[i].train_for_iteration()
+                loss_average += m_loss_average / model_count
+                declare_loss_average += m_declare_loss_average / model_count
+            print("loss:", loss_average, "declare loss:", declare_loss_average)
+            info_for_csv.append([batch_number, loss_average, declare_loss_average, batch_wins / 10, np.sum([correct_declares.count(i) for i in range(model_count)]) / np.sum([who_declares.count(i) for i in range(model_count)])])
+
+    finally:
+        with open(csv_name, 'w') as file:
+            for entry in info_for_csv:
+                file.write(', '.join([str(i) for i in entry]))
+                file.write('\n')
         
-    print("team 1 won", winners.count(0), "times. team 2 won", winners.count(1), "times.")
-    print("percent correct, team 1 = ", statistics.mean(team_1_percent))
-    print("percent correct, team 2 = ", statistics.mean(team_2_percent))
+        print("team 1 won", winners.count(0), "times. team 2 won", winners.count(1), "times.")
+        print("percent correct, team 1 = ", statistics.mean(team_1_percent))
+        print("percent correct, team 2 = ", statistics.mean(team_2_percent))
         
 
 

@@ -4,6 +4,7 @@ from fish import HS_LEN, hs_of
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 import random
+import numpy as np
 
 
 class QNetwork(torch.nn.Module):
@@ -59,7 +60,7 @@ class CustomDataset(Dataset):
 
 
 class DeepQModel(BaseModel):
-    def __init__(self):
+    def __init__(self, model_prefix='fish_deep_q_model'):
         """
         Parameters
         ----------
@@ -76,9 +77,20 @@ class DeepQModel(BaseModel):
 
         super(DeepQModel, self).__init__(None, None, None, None)
 
-        self.model = QNetwork(769)
-        self.declaration_model = DeclarationNetwork(769)
-        self.discount_factor = .96  # I just randomly chose this lol
+        self.model_prefix = model_prefix
+        try:
+            self.model = torch.load(self.model_prefix + '_model.pt')
+        except FileNotFoundError:
+            self.model = QNetwork(769)
+        try:
+            self.declaration_model = torch.load(self.model_prefix + '_declaration_model.pt')
+        except FileNotFoundError:
+            self.declaration_model = DeclarationNetwork(769)
+        self.discount_factor = .96
+
+    def __del__(self):
+        torch.save(self.model, self.model_prefix + '_model.pt')
+        torch.save(self.declaration_model, self.model_prefix + '_declaration_model.pt')
 
     def startNewGame(self, player_number, team, other_team, starting_cards):
         super(DeepQModel, self).startNewGame(player_number, team, other_team, starting_cards)
@@ -350,7 +362,7 @@ class DeepQModel(BaseModel):
         return actions
         # raise(NotImplementedError("TODO"))
 
-    def take_action(self, turns):
+    def take_action(self, turns, batch_number):
         """
         Returns:
         if action is to ask for a card:
@@ -367,7 +379,7 @@ class DeepQModel(BaseModel):
         declare_action = self._generate_state((0, 0), True)
         actions.append(declare_action)
 
-        if random.random() < .1:
+        if random.random() < (1 / np.sqrt(batch_number + 100)):
             best_predicted_action = random.randint(0, len(actions) - 1)
         else:
             action_tensors = torch.stack(actions)

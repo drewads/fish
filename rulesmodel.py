@@ -125,7 +125,7 @@ class RulesModel(BaseModel):
         for card in card_locations:
             self.num_cards[card_locations[card]] -= 1
 
-    def take_action(self, turns):
+    def take_action(self, turns, batch_number):
         """
         Returns:
         if action is to ask for a card:
