@@ -167,12 +167,13 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
     models = [deep_q_model.DeepQModel(f'fish_deep_q_model-{i}-{csv_name.replace("_data.csv", "")}', seed_model_name) for i in range(model_count)] + [rulesmodel.RulesModel() for _ in range(PLAYERS - model_count)]
     
     info_for_csv = [['batch_number', 'action_loss', 'declare_loss', 'win_%', 'declare_accuracy_%']]
-    num_batches = 5_000
+    num_batches = 20_000
     try:
-        for batch_number in range(num_batches):
+        for batch_number in range(1295, num_batches):
             batch_wins = 0
             print("Playing batch", batch_number)
-            for i in range(20):
+            games_per_batch = 20
+            for i in range(games_per_batch):
                 hd, winner, who_declares, num_actions_player, correct_declares = play_game(models, batch_number)
                 print("Winner is", winner)
                 print("QModel declares", who_declares.count(0), f'times ({correct_declares.count(0)} correct). Team 1 declares', who_declares.count(0) + who_declares.count(1) + who_declares.count(2), "times. Team 2 declares", who_declares.count(3) + who_declares.count(4) + who_declares.count(5), "times.")
@@ -200,13 +201,16 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
                 loss_average += m_loss_average / model_count
                 declare_loss_average += m_declare_loss_average / model_count
             print("loss:", loss_average, "declare loss:", declare_loss_average)
-            info_for_csv.append([batch_number, loss_average, declare_loss_average, batch_wins / 10, np.sum([correct_declares.count(i) for i in range(model_count)]) / np.sum([who_declares.count(i) for i in range(model_count)])])
+            info_for_csv.append([batch_number, loss_average, declare_loss_average, batch_wins / games_per_batch, np.sum([correct_declares.count(i) for i in range(model_count)]) / np.sum([who_declares.count(i) for i in range(model_count)])])
+            with open(csv_name, 'a') as file:
+                file.write(', '.join([str(i) for i in [batch_number, loss_average, declare_loss_average, batch_wins / games_per_batch, np.sum([correct_declares.count(i) for i in range(model_count)]) / np.sum([who_declares.count(i) for i in range(model_count)])]]))
+                file.write('\n')
 
     finally:
-        with open(csv_name, 'w') as file:
-            for entry in info_for_csv:
-                file.write(', '.join([str(i) for i in entry]))
-                file.write('\n')
+        # with open(csv_name, 'w') as file:
+        #     for entry in info_for_csv:
+        #         file.write(', '.join([str(i) for i in entry]))
+        #         file.write('\n')
         
         print("team 1 won", winners.count(0), "times. team 2 won", winners.count(1), "times.")
         print("percent correct, team 1 = ", statistics.mean(team_1_percent))

@@ -77,6 +77,7 @@ class DeepQModel(BaseModel):
         starting_cards : list(int)
             A list of the cards the player starts with
         """
+        print(f"Making model on device {device}")
         self.action_replay = []
 
         super(DeepQModel, self).__init__(None, None, None, None)
@@ -345,7 +346,7 @@ class DeepQModel(BaseModel):
         declare_optimizer = torch.optim.Adam(self.declaration_model.parameters(), lr=1e-3)
         self.declaration_model.train()
 
-        pbar = tqdm(train_declare_dataloader, desc="Training Declare", leave=False, position=1)
+        pbar = tqdm(train_declare_dataloader, desc="Training Declare", leave=True)
         running_average = 0
         seen_so_far = 0
         declare_loss_average = 0
@@ -359,6 +360,8 @@ class DeepQModel(BaseModel):
 
             declare_optimizer.zero_grad()
             loss.backward()
+
+            torch.nn.utils.clip_grad_norm_(self.declaration_model.parameters(), 1)
 
             declare_optimizer.step()
 
@@ -377,7 +380,7 @@ class DeepQModel(BaseModel):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
 
         self.model.train()
-        pbar = tqdm(train_dataloader, desc="Training action network", leave=False, position=1)
+        pbar = tqdm(train_dataloader, desc="Training action network", leave=True)
         running_average = 0
         seen_so_far = 0
         loss_average = 0
@@ -393,6 +396,8 @@ class DeepQModel(BaseModel):
             optimizer.zero_grad()
             loss.backward()
 
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
+
             optimizer.step()
 
             seen_so_far += 1
@@ -402,6 +407,9 @@ class DeepQModel(BaseModel):
             loss_average += loss.item() / len(train_dataloader)
 
             pbar.set_postfix({'loss': running_average})
+
+        torch.save(self.model, self.model_prefix + '_model.pt')
+        torch.save(self.declaration_model, self.model_prefix + '_declaration_model.pt')
 
         return (loss_average, declare_loss_average)
 
@@ -451,7 +459,7 @@ class DeepQModel(BaseModel):
 
             self.model.eval()
             predicted_value = self.model(action_tensors.to(self.device))
-            best_predicted_action = torch.argmax(predicted_value)
+            best_predicted_action = torch.argmin(predicted_value)
 
         if best_predicted_action == len(actions) - 1:
             self.action_replay.append(('action', 'declare', declare_action))
