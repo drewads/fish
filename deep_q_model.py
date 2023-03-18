@@ -100,7 +100,7 @@ class DeepQModel(BaseModel):
                 print("Model successfully seeded")
             except FileNotFoundError:
                 pass
-        self.discount_factor = .96
+        self.discount_factor = .9961 # looks < 250 ahead
 
     def __del__(self):
         torch.save(self.model, self.model_prefix + '_model.pt')
@@ -459,7 +459,7 @@ class DeepQModel(BaseModel):
 
             self.model.eval()
             predicted_value = self.model(action_tensors.to(self.device))
-            best_predicted_action = torch.argmin(predicted_value)
+            best_predicted_action = torch.argmax(predicted_value)
 
         if best_predicted_action == len(actions) - 1:
             self.action_replay.append(('action', 'declare', declare_action))
