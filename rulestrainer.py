@@ -168,7 +168,7 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
     models = [deep_q_model.DeepQModel(f'fish_deep_q_model-{i}-{csv_name.replace("_data.csv", "")}', seed_model_name=None) for i in range(model_count)] + [random_model.RandomModel() for _ in range(PLAYERS - model_count)]
     
     info_for_csv = [['batch_number', 'action_loss', 'declare_loss', 'win_%', 'declare_accuracy_%']]
-    num_batches = 5
+    num_batches = 2_000
     try:
         for batch_number in range(num_batches):
             batch_wins = 0
