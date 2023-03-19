@@ -95,16 +95,16 @@ class DeepQModel(BaseModel):
 
         if seed_model_name:
             try:
-                self.model = torch.load(seed_model_name + '_model.pt').to(self.device)
-                self.declaration_model = torch.load(seed_model_name + '_declaration_model.pt').to(self.device)
+                self.model = torch.load(seed_model_name + '_model.pt', map_location=device).to(self.device)
+                self.declaration_model = torch.load(seed_model_name + '_declaration_model.pt', map_location=device).to(self.device)
                 print("Model successfully seeded")
             except FileNotFoundError:
-                pass
+                breakpoint()
         self.discount_factor = .9961 # looks < 250 ahead
 
-    def __del__(self):
-        torch.save(self.model, self.model_prefix + '_model.pt')
-        torch.save(self.declaration_model, self.model_prefix + '_declaration_model.pt')
+    # def __del__(self):
+    #     torch.save(self.model, self.model_prefix + '_model.pt')
+    #     torch.save(self.declaration_model, self.model_prefix + '_declaration_model.pt')
 
     def startNewGame(self, player_number, team, other_team, starting_cards):
         super(DeepQModel, self).startNewGame(player_number, team, other_team, starting_cards)
@@ -245,6 +245,7 @@ class DeepQModel(BaseModel):
         location_stacked_tensor = torch.cat(location_tensors)
         return torch.cat([halfsuit_tensor, location_stacked_tensor])
 
+    '''
     def _generate_declaration(self):
         state = self._generate_state((0, 0), True)
         self.declaration_model.eval()
@@ -262,9 +263,8 @@ class DeepQModel(BaseModel):
             declare_dict[self.team[card_location_prediction]].add(current_card)
             current_card += 1
         
-        return (declare_dict, halfsuit_prediction)
+        return (declare_dict, halfsuit_prediction)'''
     
-    '''
     def _generate_declaration(self):
         for half_suit_to_find in self.half_suits_in_play:
             cards_in_hs = [card for card in range(54) if hs_of(card) == half_suit_to_find]
@@ -308,7 +308,7 @@ class DeepQModel(BaseModel):
         for card in cards_with_unknown_location:
             player = random.choice(self.team)
             declare_dict[player].add(card)
-        return (declare_dict, half_suit_to_find)'''
+        return (declare_dict, half_suit_to_find)
 
     def train_for_iteration(self):
         print(f'Replay length is {len(self.action_replay)}')

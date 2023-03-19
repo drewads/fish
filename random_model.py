@@ -17,13 +17,10 @@ class RandomModel(BaseModel):
         starting_cards : list(int)
             A list of the cards the player starts with
         """
-
         super(RandomModel, self).__init__(None, None, None, None)
-
+        
     def startNewGame(self, player_number, team, other_team, starting_cards):
-        super(RandomModel, self).startNewGame(player_number, team, other_team, starting_cards)
-
-        # We should use a better implementation of state for our deep Q model, I just don't know how yet
+        super(RandomModel, self).__init__(player_number, team, other_team, starting_cards)
         self.half_suits_in_play = list(range(int(54 / HS_LEN)))
         self.known_cards = {k: set() for k in team + other_team}
         for card in starting_cards:
@@ -96,20 +93,6 @@ class RandomModel(BaseModel):
         successful : bool
             Whether the claim is successful
         """
-        if successful and self.player_number in team:
-            declare_dict, halfsuit_prediction = self._generate_declaration()
-            if halfsuit_prediction == halfsuit:
-                correct = True
-                for card, location in card_locations.items():
-                    if card not in declare_dict[location]:
-                        correct = False
-                        break
-                if correct:
-                    declare_action = self._generate_state((0, 0), True)
-                    self.action_replay.append(('action', 'declare', declare_action))
-
-        self.action_replay.append(('halfsuit_claim', team, halfsuit, successful, card_locations, self._generate_state((0, 0), True)))
-
         self.half_suits_in_play.remove(halfsuit)
         cards_in_hs = [card for card in range(54) if hs_of(card) == halfsuit]
         for card in cards_in_hs:
