@@ -176,6 +176,7 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
             batch_wins = 0
             print("Playing batch", batch_number)
             games_per_batch = 20
+            temp = {0: [0,0], 1: [0,0], 2: [0,0], 3: [0,0], 4: [0,0], 5: [0,0] }
             for i in range(games_per_batch):
                 hd, winner, who_declares, num_actions_player, correct_declares, questions = play_game(models, batch_number)
                 print("Winner is", winner)
@@ -197,7 +198,13 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
                     team_2_percent.append(hd[1][0]/sum(hd[1]))
                 else:
                     team_2_percent.append(0)
-                print(questions)
+                
+                for my_i in range(6):
+                    temp[my_i][0] += questions[my_i][0]
+                    temp[my_i][1] += questions[my_i][1]
+
+            for my_i in range(6):
+                print(my_i, " accuracy was ", temp[my_i][0]/temp[my_i][1])
 
             loss_average = 0
             declare_loss_average = 0
