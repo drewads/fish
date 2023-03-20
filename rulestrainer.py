@@ -40,7 +40,7 @@ def play_game(models, batch, s = None):
     players = [i for i in range(PLAYERS)]
     who_declares = []
     correct_declares = []
-    
+    questions = {0: [0,0], 1: [0,0], 2: [0,0], 3: [0,0], 4: [0,0], 5: [0,0] }
     time_since_transfer = 0
     num_actions_player = dict(zip([i for i in range(PLAYERS)], [0 for _ in range(PLAYERS)]))
 
@@ -86,6 +86,7 @@ def play_game(models, batch, s = None):
                 models[player].claim_halfsuit(get_team(current_player), halfsuit, was_successful, card_locations)
             
         else:
+            questions[current_player][1] += 1
             num_actions_player[current_player] += 1
             askee = action_support[0]
             card = action_support[1]
@@ -94,6 +95,7 @@ def play_game(models, batch, s = None):
                 raise Exception("Invalid ask for card!")
             #print("Player ", current_player, " asks ", askee, " for card ", card)
             if transfer: 
+                questions[current_player][0] += 1
                 time_since_transfer = 0
                 #print(askee, "had card ", card)
                 start_cards = [list(current_game.cards[i]) for i in players]
@@ -149,7 +151,7 @@ def play_game(models, batch, s = None):
     #print("Team that won ", current_game.team_won())
     #print("Halfsuit declarations = ", halfsuit_declarations)
     #print("\n")
-    return halfsuit_declarations, current_game.team_won(), who_declares, num_actions_player, correct_declares
+    return halfsuit_declarations, current_game.team_won(), who_declares, num_actions_player, correct_declares, questions
 
 
 def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_model-0-one_ml_agent'):
@@ -175,7 +177,7 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
             print("Playing batch", batch_number)
             games_per_batch = 20
             for i in range(games_per_batch):
-                hd, winner, who_declares, num_actions_player, correct_declares = play_game(models, batch_number)
+                hd, winner, who_declares, num_actions_player, correct_declares, questions = play_game(models, batch_number)
                 print("Winner is", winner)
                 print("QModel declares", who_declares.count(0), f'times ({correct_declares.count(0)} correct). Team 1 declares', who_declares.count(0) + who_declares.count(1) + who_declares.count(2), "times. Team 2 declares", who_declares.count(3) + who_declares.count(4) + who_declares.count(5), "times.")
                 print("Actions per player: 0:", num_actions_player[0], "1:", num_actions_player[1], "2:", num_actions_player[2], "3:", num_actions_player[3], "4:",num_actions_player[4], "5:", num_actions_player[5])
@@ -195,6 +197,8 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
                     team_2_percent.append(hd[1][0]/sum(hd[1]))
                 else:
                     team_2_percent.append(0)
+                print(questions)
+
             loss_average = 0
             declare_loss_average = 0
             for i in range(model_count):
