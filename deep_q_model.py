@@ -85,12 +85,16 @@ class DeepQModel(BaseModel):
         self.model_prefix = model_prefix
         self.device = device
         try:
+            print("Successfully loaded action network from save")
             self.model = torch.load(self.model_prefix + '_model.pt').to(self.device)
         except FileNotFoundError:
+            print("Remaking action network")
             self.model = QNetwork(769).to(self.device)
         try:
+            print("Successfully loaded declaration model from save")
             self.declaration_model = torch.load(self.model_prefix + '_declaration_model.pt').to(self.device)
         except FileNotFoundError:
+            print("Remaking declaration model")
             self.declaration_model = DeclarationNetwork(769).to(self.device)
 
         if seed_model_name:
@@ -343,7 +347,7 @@ class DeepQModel(BaseModel):
         train_declare_dataset = CustomDataset(declare_inputs, declare_targets)
         train_declare_dataloader = DataLoader(train_declare_dataset, batch_size=32, shuffle=True)
         declare_loss_fn = torch.nn.L1Loss()
-        declare_optimizer = torch.optim.Adam(self.declaration_model.parameters(), lr=1e-3)
+        declare_optimizer = torch.optim.Adam(self.declaration_model.parameters(), lr=1e-5)
         self.declaration_model.train()
 
         pbar = tqdm(train_declare_dataloader, desc="Training Declare", leave=True)
@@ -377,7 +381,7 @@ class DeepQModel(BaseModel):
         train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
         loss_fn = torch.nn.MSELoss()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-5)
 
         self.model.train()
         pbar = tqdm(train_dataloader, desc="Training action network", leave=True)
@@ -441,6 +445,8 @@ class DeepQModel(BaseModel):
             where evidence is a dictionary of evidence. See fish.py for more information
 
         """
+        
+        
         valid_actions = self._generate_valid_actions()
         actions = [self._generate_state(action, False) for action in valid_actions]
 

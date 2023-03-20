@@ -197,10 +197,10 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
                     team_2_percent.append(0)
             loss_average = 0
             declare_loss_average = 0
-            # for i in range(model_count):
-            #     (m_loss_average, m_declare_loss_average) = models[i].train_for_iteration()
-            #     loss_average += m_loss_average / model_count
-            #     declare_loss_average += m_declare_loss_average / model_count
+            for i in range(model_count):
+                (m_loss_average, m_declare_loss_average) = models[i].train_for_iteration()
+                loss_average += m_loss_average / model_count
+                declare_loss_average += m_declare_loss_average / model_count
             print("loss:", loss_average, "declare loss:", declare_loss_average)
             info_for_csv.append([batch_number, loss_average, declare_loss_average, batch_wins / games_per_batch, np.sum([correct_declares.count(i) for i in range(model_count)]) / np.sum([who_declares.count(i) for i in range(model_count)])])
             with open(csv_name, 'a') as file:
