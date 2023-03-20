@@ -173,8 +173,9 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
     info_for_csv = [['batch_number', 'action_loss', 'declare_loss', 'win_%', 'declare_accuracy_%', "Q_model_question_acc"]]
     num_batches = 2_000
     try:
-        with open(csv_name, 'a') as file:
+        with open(csv_name, 'w') as file:
             file.write(",".join([str(i) for i in info_for_csv]))
+            file.write("\n")
 
         for batch_number in range(num_batches):
             batch_wins = 0
