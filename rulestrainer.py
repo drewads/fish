@@ -174,7 +174,7 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
     num_batches = 2_000
     try:
         with open(csv_name, 'a') as file:
-            file.write(",".join(info_for_csv))
+            file.write(",".join([str(i) for i in info_for_csv]))
 
         for batch_number in range(num_batches):
             batch_wins = 0
