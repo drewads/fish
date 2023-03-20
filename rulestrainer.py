@@ -167,11 +167,15 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
     team_2_percent = []
     winners = []
 
-    models = [deep_q_model.DeepQModel(f'fish_deep_q_model-{i}-{csv_name.replace("_data.csv", "")}', seed_model_name=None) for i in range(model_count)] + [random_model.RandomModel() for _ in range(PLAYERS - model_count)]
-    
-    info_for_csv = [['batch_number', 'action_loss', 'declare_loss', 'win_%', 'declare_accuracy_%']]
+    #models = [deep_q_model.DeepQModel(f'fish_deep_q_model-{i}-{csv_name.replace("_data.csv", "")}', seed_model_name=None) for i in range(model_count)] + [random_model.RandomModel() for _ in range(PLAYERS - model_count)]
+    models = [deep_q_model.DeepQModel(f'fish_deep_q_model-{i}-{csv_name.replace("_data.csv", "")}', seed_model_name=None) for i in range(model_count)] + [rulesmodel.RulesModel() for _ in range(PLAYERS - model_count)]
+
+    info_for_csv = [['batch_number', 'action_loss', 'declare_loss', 'win_%', 'declare_accuracy_%', "Q_model_question_acc"]]
     num_batches = 2_000
     try:
+        with open(csv_name, 'a') as file:
+            file.write(",".join(info_for_csv))
+
         for batch_number in range(num_batches):
             batch_wins = 0
             print("Playing batch", batch_number)
@@ -202,9 +206,14 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
                 for my_i in range(6):
                     temp[my_i][0] += questions[my_i][0]
                     temp[my_i][1] += questions[my_i][1]
-
+            
+            q_arr = []
             for my_i in range(6):
-                print(my_i, " accuracy was ", temp[my_i][0]/temp[my_i][1])
+                curr = temp[my_i][0]/temp[my_i][1]
+                print(my_i, " accuracy was ", curr)
+                q_arr.append(curr)
+            
+            model_q_acc = q_arr[0]
 
             loss_average = 0
             declare_loss_average = 0
@@ -215,7 +224,7 @@ def main(csv_name='model_data.csv', model_count=0, seed_model_name='fish_deep_q_
             print("loss:", loss_average, "declare loss:", declare_loss_average)
             info_for_csv.append([batch_number, loss_average, declare_loss_average, batch_wins / games_per_batch, np.sum([correct_declares.count(i) for i in range(model_count)]) / np.sum([who_declares.count(i) for i in range(model_count)])])
             with open(csv_name, 'a') as file:
-                file.write(', '.join([str(i) for i in [batch_number, loss_average, declare_loss_average, batch_wins / games_per_batch, np.sum([correct_declares.count(i) for i in range(model_count)]) / np.sum([who_declares.count(i) for i in range(model_count)])]]))
+                file.write(','.join([str(i) for i in [batch_number, loss_average, declare_loss_average, batch_wins / games_per_batch, np.sum([correct_declares.count(i) for i in range(model_count)]) / np.sum([who_declares.count(i) for i in range(model_count)]), model_q_acc]]))
                 file.write('\n')
 
     finally:

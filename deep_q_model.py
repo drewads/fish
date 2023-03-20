@@ -11,7 +11,11 @@ class QNetwork(torch.nn.Module):
     def __init__(self, inputSize):
         super(QNetwork, self).__init__()
         self.network = torch.nn.Sequential(
-            torch.nn.Linear(inputSize, 2048),
+            torch.nn.Linear(inputSize, 4096),
+            torch.nn.PReLU(),
+            torch.nn.Linear(4096, 2048),
+            torch.nn.PReLU(),
+            torch.nn.Linear(2048, 2048),
             torch.nn.PReLU(),
             torch.nn.Linear(2048, 1024),
             torch.nn.PReLU(),
