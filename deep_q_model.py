@@ -13,7 +13,11 @@ class QNetwork(torch.nn.Module):
         self.network = torch.nn.Sequential(
             torch.nn.Linear(inputSize, 4096),
             torch.nn.PReLU(),
+            torch.nn.Linear(4096, 4096),
+            torch.nn.PReLU(),
             torch.nn.Linear(4096, 2048),
+            torch.nn.PReLU(),
+            torch.nn.Linear(2048, 2048),
             torch.nn.PReLU(),
             torch.nn.Linear(2048, 2048),
             torch.nn.PReLU(),
